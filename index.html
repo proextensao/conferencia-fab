@@ -98,6 +98,30 @@ select.NC{background:#fff0d9;border-color:var(--nc);color:var(--nc);font-weight:
       </div>
     </div>
 
+/* ---------- Histórico ---------- */
+function desenhaHistorico() {
+  const el = $("#historico");
+  if (!confs.length) { el.innerHTML = ""; return; }
+  el.innerHTML = `<table style="min-width:0"><thead><tr><th>Data</th><th>Hora</th><th>Produtos</th><th>Total na loja</th><th></th></tr></thead><tbody>${confs.map(c => `<tr>
+      <td>${dt(c.data)}</td><td>${hora(c)}</td><td>${c.itens.length}</td><td>${c.totalLoja ?? "—"}</td>
+      <td><button class="sec" data-ver="${c.id}">Abrir</button>
+          <button class="sec" data-base="${c.id}" ${c.id === cur?.id ? "disabled" : ""}>Comparar com esta</button></td>
+    </tr>`).join("")}</tbody></table>`;
+}
+$("#historico").onclick = e => {
+  const v = e.target.dataset.ver, b = e.target.dataset.base;
+  if (v) { $("#selConf").value = v; baseId = ""; abrir(); }
+  if (b) { baseId = b; desenhar(); aviso("Comparando com " + rotulo(confs.find(c => c.id === b))); }
+};
+
+function desenhaSelBase() {
+  const opts = confs.filter(c => c.id !== cur.id)
+    .map(c => `<option value="${c.id}">${rotulo(c)} – ${c.itens.length} produtos</option>`).join("");
+  $("#selBase").innerHTML = `<option value="">Automático (versão anterior)</option>` + opts;
+  $("#selBase").value = baseId && confs.some(c => c.id === baseId && c.id !== cur.id) ? baseId : "";
+}
+
+
     <div id="vista" class="hide">
       <div class="resumo" id="resumo"></div>
       <div class="tabs noprint" id="tabs"></div>
@@ -402,28 +426,6 @@ function comparar() {
 const num = p => { if (!p) return null; const n = parseFloat(String(p).replace(/\./g, "").replace(",", ".")); return isNaN(n) ? null : n; };
 const brl = n => n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-/* ---------- Histórico ---------- */
-function desenhaHistorico() {
-  const el = $("#historico");
-  if (!confs.length) { el.innerHTML = ""; return; }
-  el.innerHTML = `<table style="min-width:0"><thead><tr><th>Data</th><th>Hora</th><th>Produtos</th><th>Total na loja</th><th></th></tr></thead><tbody>${confs.map(c => `<tr>
-      <td>${dt(c.data)}</td><td>${hora(c)}</td><td>${c.itens.length}</td><td>${c.totalLoja ?? "—"}</td>
-      <td><button class="sec" data-ver="${c.id}">Abrir</button>
-          <button class="sec" data-base="${c.id}" ${c.id === cur?.id ? "disabled" : ""}>Comparar com esta</button></td>
-    </tr>`).join("")}</tbody></table>`;
-}
-$("#historico").onclick = e => {
-  const v = e.target.dataset.ver, b = e.target.dataset.base;
-  if (v) { $("#selConf").value = v; baseId = ""; abrir(); }
-  if (b) { baseId = b; desenhar(); aviso("Comparando com " + rotulo(confs.find(c => c.id === b))); }
-};
-
-function desenhaSelBase() {
-  const opts = confs.filter(c => c.id !== cur.id)
-    .map(c => `<option value="${c.id}">${rotulo(c)} – ${c.itens.length} produtos</option>`).join("");
-  $("#selBase").innerHTML = `<option value="">Automático (versão anterior)</option>` + opts;
-  $("#selBase").value = baseId && confs.some(c => c.id === baseId && c.id !== cur.id) ? baseId : "";
-}
 
 /* ---------- Tela ---------- */
 function desenhar() {
