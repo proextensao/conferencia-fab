@@ -85,6 +85,7 @@ select.NC{background:#fff0d9;border-color:var(--nc);color:var(--nc);font-weight:
         <button id="gerar">Gerar conferência</button>
         <span id="gerarMsg" class="mut"></span>
       </div>
+      <div id="diag"></div>
     </div>
 
     <div class="card noprint">
@@ -93,6 +94,8 @@ select.NC{background:#fff0d9;border-color:var(--nc);color:var(--nc);font-weight:
         <button class="sec" id="csv">Exportar CSV</button>
         <button class="sec" id="imp">Imprimir</button>
         <button class="sec" id="apagar">Apagar esta conferência</button>
+        <button class="sec" id="zerar">Zerar este dia</button>
+        <button class="sec" id="zerarTudo">Apagar tudo</button>
       </div>
     </div>
 
@@ -135,6 +138,7 @@ const cls = v => v === "SIM" ? "SIM" : v === "NÃO" ? "NAO" : v === "NÃO CONFOR
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
 let confs = [], cur = null, tab = "novos", saveTimer = null;
+let diag = { links: 0, semId: [], dup: [] };
 
 function aviso(t, erro) {
   const m = $("#msg"); m.textContent = t; m.classList.remove("hide");
@@ -147,9 +151,9 @@ $("#dataConf").valueAsDate = new Date();
 carregar().catch(e => aviso("Erro ao conectar ao Firebase: " + e.message, true));
 
 /* ---------- Leitura de produtos ---------- */
-const idDe = u => { const m = String(u).match(/MLB[-_]?(\d{6,})/i); return m ? "MLB" + m[1] : null; };
+const idDe = u => { const m = String(u).match(/(MLBU?)[-_]?(\d{6,})/i); return m ? m[1].toUpperCase() + m[2] : null; };
 const tituloDeUrl = u => {
-  const m = String(u).match(/MLB-?\d+-(.+?)-?_(?:JM|NQ|Q)/i);
+  const m = String(u).match(/MLBU?-?\d+-(.+?)-?_(?:JM|NQ|Q)/i);
   return m ? decodeURIComponent(m[1]).replace(/-/g, " ") : "";
 };
 const hash = s => { let h = 5381; for (const c of s.toLowerCase().trim()) h = ((h << 5) + h + c.charCodeAt(0)) >>> 0; return "T" + h.toString(16); };
@@ -162,7 +166,7 @@ function lerTexto(txt) {
     if (comLink) {
       const url = (l.match(/https?:\/\/\S+/) || [""])[0], id = idDe(l);
       if (id) out.push(novoItem(id, tituloDeUrl(url) || l.replace(url, "").trim(), url));
-    } else out.push(novoItem(hash(l), l));
+    } else if (!/^https?:\/\//i.test(l)) out.push(novoItem(hash(l), l));
   }
   return out;
 }
@@ -175,7 +179,8 @@ async function lerPDF(file) {
     const tx = tc.items.filter(t => t.str.trim()).map(t => ({ s: t.str.trim(), x: t.transform[4], y: t.transform[5] }));
     for (const a of an) {
       if (a.subtype !== "Link" || !a.url) continue;
-      const id = idDe(a.url); if (!id) continue;
+      diag.links++;
+      const id = idDe(a.url); if (!id) { diag.semId.push(a.url); continue; }
       const [x1, y1, x2, y2] = a.rect;
       const dentro = tx.filter(t => t.x >= x1 - 2 && t.x <= x2 + 2 && t.y >= y1 - 3 && t.y <= y2 + 3);
       const abaixo = tx.filter(t => t.x >= x1 - 5 && t.x <= x2 + 5 && t.y < y1 && t.y > y1 - 110)
@@ -192,7 +197,7 @@ function unir(lista) {
   for (const it of lista) {
     const x = m.get(it.i);
     if (!x) m.set(it.i, it);
-    else { if (it.t.length > x.t.length) x.t = it.t; if (!x.p && it.p) x.p = it.p; if (!x.k && it.k) x.k = it.k; }
+    else { diag.dup.push(x.t); if (it.t.length > x.t.length) x.t = it.t; if (!x.p && it.p) x.p = it.p; if (!x.k && it.k) x.k = it.k; }
   }
   return [...m.values()];
 }
@@ -210,22 +215,28 @@ drop.ondrop = e => { e.preventDefault(); drop.classList.remove("over"); arquivos
 $("#gerar").onclick = async () => {
   const btn = $("#gerar"), msg = $("#gerarMsg"); btn.disabled = true; msg.className = "mut";
   try {
-    let itens = [];
+    let itens = []; diag = { links: 0, semId: [], dup: [] }; $("#diag").innerHTML = "";
     for (let i = 0; i < arquivos.length; i++) { msg.textContent = `Lendo PDF ${i + 1} de ${arquivos.length}…`; itens = itens.concat(await lerPDF(arquivos[i])); }
     itens = itens.concat(lerTexto($("#colar").value));
     itens = unir(itens);
-    if (!itens.length) throw new Error("Nenhum produto encontrado. Verifique se o PDF foi salvo pelo navegador (com links) ou cole os links.");
+    if (!itens.length) throw new Error("Nenhum produto encontrado. O link da loja não é lido automaticamente: envie os PDFs das páginas da loja ou cole links de produtos (com código MLB).");
     if (itens.length > 3500) throw new Error("Limite de 3.500 produtos por conferência.");
     const data = $("#dataConf").value || new Date().toISOString().slice(0, 10);
-    const ant = confs.filter(c => c.data < data)[0] || confs[0];   // conferência anterior
+    const mesmas = confs.filter(c => c.data === data);
+    if (mesmas.length && !confirm(`Já existe conferência em ${data.split("-").reverse().join("/")}. Substituir pela nova? As marcações de LAUDO/HOMOLOGADO desta data serão perdidas.`)) {
+      btn.disabled = false; msg.textContent = ""; return;
+    }
+    const ant = confs.filter(c => c.data < data)[0];   // conferência anterior (data menor)
     if (ant) {
       const mp = new Map(ant.itens.map(x => [x.i, x]));
       for (const it of itens) { const o = mp.get(it.i); if (o) { it.f = o.f; it.l = o.l; it.h = o.h; it.o = o.o; } }
     }
     msg.textContent = "Salvando…";
     const ref = await db.collection("conferencias").add({ data, criadoEm: firebase.firestore.FieldValue.serverTimestamp(), itens });
+    await Promise.all(mesmas.map(c => db.collection("conferencias").doc(c.id).delete()));
     arquivos = []; mostraArqs(); $("#colar").value = ""; $("#arq").value = "";
     msg.textContent = `${itens.length} produtos salvos.`;
+    mostraDiag(itens.length);
     await carregar(ref.id);
     const r = comparar();
     if (r.ant && (r.novos.length + r.removidos.length + r.alterados.length))
@@ -346,6 +357,27 @@ $("#csv").onclick = () => {
   a.download = `conferencia-fab-${cur.data}.csv`; a.click();
 };
 $("#imp").onclick = () => window.print();
+function mostraDiag(total) {
+  const d = diag, cut = s => esc(s.length > 110 ? s.slice(0, 110) + "…" : s);
+  $("#diag").innerHTML = `<details open style="margin-top:10px"><summary>Relatório da leitura</summary>
+    <p class="mut" style="margin:6px 0">${d.links} links lidos nos PDFs · ${d.links - d.semId.length} de produtos · ${d.dup.length} repetido(s) unido(s) · <b>${total} produtos únicos</b></p>
+    ${d.dup.length ? `<p style="margin:6px 0"><b>Repetidos (apareceram mais de uma vez):</b></p><ul>${d.dup.map(t => `<li>${cut(t)}</li>`).join("")}</ul>` : ""}
+    ${d.semId.length ? `<details><summary class="mut">${d.semId.length} links sem código de produto (menus, rodapé, filtros…)</summary><ul>${d.semId.slice(0, 40).map(u => `<li>${cut(u)}</li>`).join("")}</ul></details>` : ""}
+  </details>`;
+}
+$("#zerar").onclick = async () => {
+  if (!cur) return;
+  const d = cur.data, mesmas = confs.filter(c => c.data === d);
+  if (!confirm(`Zerar o dia ${d.split("-").reverse().join("/")}? Serão apagadas ${mesmas.length} conferência(s) desta data. Não pode ser desfeito.`)) return;
+  await Promise.all(mesmas.map(c => db.collection("conferencias").doc(c.id).delete()));
+  $("#diag").innerHTML = ""; aviso("Dia zerado"); carregar();
+};
+$("#zerarTudo").onclick = async () => {
+  if (!confs.length) return;
+  if (prompt(`Isso apaga TODAS as ${confs.length} conferências. Digite APAGAR para confirmar:`) !== "APAGAR") return;
+  await Promise.all(confs.map(c => db.collection("conferencias").doc(c.id).delete()));
+  $("#diag").innerHTML = ""; aviso("Tudo apagado"); carregar();
+};
 $("#apagar").onclick = async () => {
   if (!cur || !confirm("Apagar a conferência de " + cur.data.split("-").reverse().join("/") + "? Isso não pode ser desfeito.")) return;
   await db.collection("conferencias").doc(cur.id).delete(); carregar();
