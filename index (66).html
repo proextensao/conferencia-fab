@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Conferência semanal – Loja FAB</title>
+<style>
+:root{--azul:#12305a;--azul2:#1d4a8a;--ceu:#e8eef7;--linha:#d3dbe8;--txt:#18212f;--mut:#5b6678;--bg:#f6f8fb;--ok:#1d7a46;--no:#b3261e;--nc:#a45f00;--novo:#0d6b8f}
+*{box-sizing:border-box}
+body{margin:0;font:15px/1.45 "Segoe UI",system-ui,sans-serif;color:var(--txt);background:var(--bg)}
+header{background:var(--azul);color:#fff;padding:14px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+header h1{font-size:18px;margin:0;font-weight:600;letter-spacing:.2px}
+header .sp{flex:1}
+main{max-width:1280px;margin:0 auto;padding:20px}
+button,select,input,textarea{font:inherit}
+button{background:var(--azul2);color:#fff;border:0;border-radius:6px;padding:8px 14px;cursor:pointer}
+button:hover{background:var(--azul)}
+button.sec{background:#fff;color:var(--azul);border:1px solid var(--linha)}
+button.sec:hover{background:var(--ceu)}
+button:disabled{opacity:.5;cursor:default}
+:focus-visible{outline:2px solid #f2b100;outline-offset:2px}
+.card{background:#fff;border:1px solid var(--linha);border-radius:8px;padding:16px;margin-bottom:16px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.hide{display:none!important}
+input[type=text],input[type=email],input[type=password],input[type=date],textarea,select{border:1px solid var(--linha);border-radius:6px;padding:7px 9px;background:#fff;color:var(--txt)}
+textarea{width:100%;min-height:110px}
+h2{font-size:16px;margin:0 0 10px}
+.mut{color:var(--mut)}
+.resumo{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.resumo div{background:#fff;border:1px solid var(--linha);border-radius:8px;padding:10px 16px;min-width:130px}
+.resumo b{display:block;font-size:24px}
+.tabs{display:flex;gap:4px;border-bottom:2px solid var(--linha);margin-bottom:12px;flex-wrap:wrap}
+.tabs button{background:none;color:var(--mut);border-radius:6px 6px 0 0;border-bottom:3px solid transparent;margin-bottom:-2px}
+.tabs button.on{color:var(--azul);border-bottom-color:var(--azul2);font-weight:600;background:var(--ceu)}
+.wrap{overflow-x:auto;background:#fff;border:1px solid var(--linha);border-radius:8px}
+table{border-collapse:collapse;width:100%;min-width:900px}
+th,td{padding:8px 10px;border-bottom:1px solid var(--linha);text-align:left;vertical-align:middle}
+th{background:var(--ceu);font-weight:600;position:sticky;top:0}
+td a{color:var(--azul2);text-decoration:none}td a:hover{text-decoration:underline}
+td select{width:100%;min-width:150px}
+td input[type=text]{width:100%}
+select.SIM{background:#e3f4ea;border-color:var(--ok);color:var(--ok);font-weight:600}
+select.NAO{background:#fbe6e4;border-color:var(--no);color:var(--no);font-weight:600}
+select.NC{background:#fff0d9;border-color:var(--nc);color:var(--nc);font-weight:600}
+.tag{font-size:12px;padding:2px 8px;border-radius:10px;background:var(--novo);color:#fff;white-space:nowrap}
+.tag.rem{background:var(--no)}
+.alerta{flex:1 1 100%;border-radius:8px;padding:12px 16px;border:1px solid;display:flex;gap:18px;flex-wrap:wrap;align-items:center}
+.alerta.warn{background:#fff0d9;border-color:var(--nc);color:#6b3d00;font-size:16px}
+.alerta.warn span{font-weight:600}
+.alerta.ok{background:#e3f4ea;border-color:var(--ok);color:var(--ok)}
+.alerta.info{background:var(--ceu);border-color:var(--linha)}
+.tag.pr{background:var(--nc)}
+#msg{position:fixed;bottom:16px;right:16px;background:var(--azul);color:#fff;padding:10px 16px;border-radius:8px;max-width:360px}
+#drop{border:2px dashed var(--linha);border-radius:8px;padding:22px;text-align:center;background:var(--bg)}
+#drop.over{border-color:var(--azul2);background:var(--ceu)}
+.err{color:var(--no)}
+@media print{header,.noprint,.tabs{display:none!important}.wrap{border:0}body{background:#fff}}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Conferência semanal – Loja oficial FAB (Mercado Livre)</h1>
+</header>
+
+<main>
+  <section id="app">
+    <div class="card noprint">
+      <h2>Nova conferência</h2>
+      <div class="row" style="margin-bottom:10px">
+        <label>Data da conferência <input type="date" id="dataConf"></label>
+        <span class="mut">Será comparada com a conferência anterior.</span>
+      </div>
+      <div id="drop">
+        Arraste aqui os PDFs das páginas da loja (salvos pelo navegador com Ctrl+P → Salvar como PDF)<br>
+        <button class="sec" id="escolher" style="margin-top:8px">Escolher PDFs</button>
+        <input type="file" id="arq" accept="application/pdf" multiple class="hide">
+        <div id="arqLista" class="mut" style="margin-top:8px"></div>
+      </div>
+      <details style="margin-top:10px">
+        <summary>Ou colar links / nomes dos produtos (um por linha)</summary>
+        <textarea id="colar" placeholder="https://produto.mercadolivre.com.br/MLB-123456789-nome-do-produto-_JM&#10;https://..."></textarea>
+      </details>
+      <div class="row" style="margin-top:12px">
+        <button id="gerar">Gerar conferência</button>
+        <span id="gerarMsg" class="mut"></span>
+      </div>
+    </div>
+
+    <div class="card noprint">
+      <div class="row">
+        <label>Conferência: <select id="selConf"></select></label>
+        <button class="sec" id="csv">Exportar CSV</button>
+        <button class="sec" id="imp">Imprimir</button>
+        <button class="sec" id="apagar">Apagar esta conferência</button>
+      </div>
+    </div>
+
+    <div id="vista" class="hide">
+      <div class="resumo" id="resumo"></div>
+      <div class="tabs noprint" id="tabs"></div>
+      <div class="row noprint" style="margin-bottom:10px">
+        <input type="text" id="busca" placeholder="Buscar produto ou fornecedor" style="min-width:280px">
+        <label><input type="checkbox" id="soPend"> Só pendentes (sem LAUDO ou HOMOLOGADO)</label>
+      </div>
+      <div class="wrap"><table><thead id="thead"></thead><tbody id="tbody"></tbody></table></div>
+    </div>
+    <p id="vazio" class="mut">Nenhuma conferência ainda. Gere a primeira acima.</p>
+  </section>
+</main>
+<div id="msg" class="hide"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+/* ============ 1) COLE AQUI A CONFIGURAÇÃO DO SEU FIREBASE ============ */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyD4rPblB8lGb_HWFYfUYkq8um85uAbM4vU",
+  authDomain: "mercado-livre-dfb32.firebaseapp.com",
+  projectId: "mercado-livre-dfb32",
+  storageBucket: "mercado-livre-dfb32.firebasestorage.app",
+  messagingSenderId: "663540272674",
+  appId: "1:663540272674:web:46fc655e12abcf484c047b"
+};
+/* ===================================================================== */
+
+firebase.initializeApp(FIREBASE_CONFIG);
+const db = firebase.firestore();
+pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+const $ = s => document.querySelector(s);
+const OPC = [["", "—"], ["SIM", "SIM"], ["NÃO", "NÃO"], ["NÃO CONFORMIDADE", "NÃO CONFORMIDADE"]];
+const cls = v => v === "SIM" ? "SIM" : v === "NÃO" ? "NAO" : v === "NÃO CONFORMIDADE" ? "NC" : "";
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+let confs = [], cur = null, tab = "novos", saveTimer = null;
+
+function aviso(t, erro) {
+  const m = $("#msg"); m.textContent = t; m.classList.remove("hide");
+  m.style.background = erro ? "#b3261e" : "";
+  clearTimeout(aviso.t); aviso.t = setTimeout(() => m.classList.add("hide"), 3000);
+}
+
+/* ---------- Início (sem login) ---------- */
+$("#dataConf").valueAsDate = new Date();
+carregar().catch(e => aviso("Erro ao conectar ao Firebase: " + e.message, true));
+
+/* ---------- Leitura de produtos ---------- */
+const idDe = u => { const m = String(u).match(/MLB[-_]?(\d{6,})/i); return m ? "MLB" + m[1] : null; };
+const tituloDeUrl = u => {
+  const m = String(u).match(/MLB-?\d+-(.+?)-?_(?:JM|NQ|Q)/i);
+  return m ? decodeURIComponent(m[1]).replace(/-/g, " ") : "";
+};
+const hash = s => { let h = 5381; for (const c of s.toLowerCase().trim()) h = ((h << 5) + h + c.charCodeAt(0)) >>> 0; return "T" + h.toString(16); };
+const novoItem = (i, t, k, p) => ({ i, t: t || i, k: k || "", p: p || "", f: "", l: "", h: "", o: "" });
+
+function lerTexto(txt) {
+  const out = [], linhas = txt.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+  const comLink = linhas.some(l => idDe(l));
+  for (const l of linhas) {
+    if (comLink) {
+      const url = (l.match(/https?:\/\/\S+/) || [""])[0], id = idDe(l);
+      if (id) out.push(novoItem(id, tituloDeUrl(url) || l.replace(url, "").trim(), url));
+    } else out.push(novoItem(hash(l), l));
+  }
+  return out;
+}
+
+async function lerPDF(file) {
+  const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise, out = [];
+  for (let n = 1; n <= pdf.numPages; n++) {
+    const pg = await pdf.getPage(n);
+    const [tc, an] = await Promise.all([pg.getTextContent(), pg.getAnnotations()]);
+    const tx = tc.items.filter(t => t.str.trim()).map(t => ({ s: t.str.trim(), x: t.transform[4], y: t.transform[5] }));
+    for (const a of an) {
+      if (a.subtype !== "Link" || !a.url) continue;
+      const id = idDe(a.url); if (!id) continue;
+      const [x1, y1, x2, y2] = a.rect;
+      const dentro = tx.filter(t => t.x >= x1 - 2 && t.x <= x2 + 2 && t.y >= y1 - 3 && t.y <= y2 + 3);
+      const abaixo = tx.filter(t => t.x >= x1 - 5 && t.x <= x2 + 5 && t.y < y1 && t.y > y1 - 110)
+        .sort((a, b) => b.y - a.y).map(t => t.s).join(" ");
+      const pm = abaixo.match(/R\$\s*([\d.]+(?:,\d{2})?)/);
+      out.push(novoItem(id, dentro.map(t => t.s).join(" ") || tituloDeUrl(a.url), a.url, pm ? pm[1] : ""));
+    }
+  }
+  return out;
+}
+
+function unir(lista) {
+  const m = new Map();
+  for (const it of lista) {
+    const x = m.get(it.i);
+    if (!x) m.set(it.i, it);
+    else { if (it.t.length > x.t.length) x.t = it.t; if (!x.p && it.p) x.p = it.p; if (!x.k && it.k) x.k = it.k; }
+  }
+  return [...m.values()];
+}
+
+/* ---------- Upload ---------- */
+let arquivos = [];
+const mostraArqs = () => $("#arqLista").textContent = arquivos.length ? arquivos.map(f => f.name).join(", ") : "";
+$("#escolher").onclick = () => $("#arq").click();
+$("#arq").onchange = e => { arquivos = [...arquivos, ...e.target.files]; mostraArqs(); };
+const drop = $("#drop");
+drop.ondragover = e => { e.preventDefault(); drop.classList.add("over"); };
+drop.ondragleave = () => drop.classList.remove("over");
+drop.ondrop = e => { e.preventDefault(); drop.classList.remove("over"); arquivos = [...arquivos, ...[...e.dataTransfer.files].filter(f => f.type === "application/pdf")]; mostraArqs(); };
+
+$("#gerar").onclick = async () => {
+  const btn = $("#gerar"), msg = $("#gerarMsg"); btn.disabled = true; msg.className = "mut";
+  try {
+    let itens = [];
+    for (let i = 0; i < arquivos.length; i++) { msg.textContent = `Lendo PDF ${i + 1} de ${arquivos.length}…`; itens = itens.concat(await lerPDF(arquivos[i])); }
+    itens = itens.concat(lerTexto($("#colar").value));
+    itens = unir(itens);
+    if (!itens.length) throw new Error("Nenhum produto encontrado. Verifique se o PDF foi salvo pelo navegador (com links) ou cole os links.");
+    if (itens.length > 3500) throw new Error("Limite de 3.500 produtos por conferência.");
+    const data = $("#dataConf").value || new Date().toISOString().slice(0, 10);
+    const ant = confs.filter(c => c.data < data)[0] || confs[0];   // conferência anterior
+    if (ant) {
+      const mp = new Map(ant.itens.map(x => [x.i, x]));
+      for (const it of itens) { const o = mp.get(it.i); if (o) { it.f = o.f; it.l = o.l; it.h = o.h; it.o = o.o; } }
+    }
+    msg.textContent = "Salvando…";
+    const ref = await db.collection("conferencias").add({ data, criadoEm: firebase.firestore.FieldValue.serverTimestamp(), itens });
+    arquivos = []; mostraArqs(); $("#colar").value = ""; $("#arq").value = "";
+    msg.textContent = `${itens.length} produtos salvos.`;
+    await carregar(ref.id);
+    const r = comparar();
+    if (r.ant && (r.novos.length + r.removidos.length + r.alterados.length))
+      alert(`ATENÇÃO – alterações em relação à conferência anterior:\n\n• ${r.novos.length} item(ns) incluído(s)\n• ${r.removidos.length} item(ns) excluído(s)\n• ${r.alterados.length} preço(s) alterado(s)`);
+  } catch (e) { msg.className = "err"; msg.textContent = e.message; }
+  btn.disabled = false;
+};
+
+/* ---------- Dados ---------- */
+async function carregar(abrirId) {
+  const snap = await db.collection("conferencias").orderBy("data", "desc").get();
+  confs = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => b.data.localeCompare(a.data) || (b.criadoEm?.seconds || 0) - (a.criadoEm?.seconds || 0));
+  $("#selConf").innerHTML = confs.map(c => `<option value="${c.id}">${c.data.split("-").reverse().join("/")} – ${c.itens.length} produtos</option>`).join("");
+  $("#vazio").classList.toggle("hide", !!confs.length);
+  $("#vista").classList.toggle("hide", !confs.length);
+  if (confs.length) { $("#selConf").value = abrirId || confs[0].id; abrir(); }
+}
+$("#selConf").onchange = abrir;
+
+function abrir() {
+  cur = confs.find(c => c.id === $("#selConf").value);
+  tab = "auto"; desenhar();
+}
+function comparar() {
+  const i = confs.indexOf(cur), ant = confs[i + 1];
+  const idsAnt = new Set((ant?.itens || []).map(x => x.i)), idsCur = new Set(cur.itens.map(x => x.i));
+  const mapAnt = new Map((ant?.itens || []).map(x => [x.i, x]));
+  const alterados = ant ? cur.itens.filter(x => {
+    const o = mapAnt.get(x.i), a = num(o?.p), b = num(x.p);
+    return o && a !== null && b !== null && a !== b;
+  }) : [];
+  return {
+    ant, mapAnt, alterados,
+    novos: ant ? cur.itens.filter(x => !idsAnt.has(x.i)) : [],
+    mantidos: ant ? cur.itens.filter(x => idsAnt.has(x.i)) : cur.itens,
+    removidos: ant ? ant.itens.filter(x => !idsCur.has(x.i)) : []
+  };
+}
+const num = p => { if (!p) return null; const n = parseFloat(String(p).replace(/\./g, "").replace(",", ".")); return isNaN(n) ? null : n; };
+const brl = n => n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+/* ---------- Tela ---------- */
+function desenhar() {
+  if (!cur) return;
+  const c = comparar();
+  const dt = d => d.split("-").reverse().join("/");
+  const nN = c.novos.length, nR = c.removidos.length, nP = c.alterados.length;
+  let al = "";
+  if (!c.ant) al = `<div class="alerta info">Primeira conferência: ainda não há com o que comparar.</div>`;
+  else if (nN + nR + nP === 0) al = `<div class="alerta ok">Sem alterações desde ${dt(c.ant.data)}: nenhum item incluído ou excluído e nenhum preço alterado.</div>`;
+  else al = `<div class="alerta warn"><b>ATENÇÃO – houve alterações desde ${dt(c.ant.data)}:</b>
+    <span>${nN} item(ns) incluído(s)</span><span>${nR} item(ns) excluído(s)</span><span>${nP} preço(s) alterado(s)</span></div>`;
+  $("#resumo").innerHTML = al + `
+    <div><b>${cur.itens.length}</b>produtos nesta semana</div>
+    <div><b>${c.ant ? c.ant.itens.length : "—"}</b>${c.ant ? "na conferência de " + dt(c.ant.data) : "sem conferência anterior"}</div>
+    <div style="border-color:var(--novo)"><b style="color:var(--novo)">${c.ant ? nN : "—"}</b>incluídos</div>
+    <div style="border-color:var(--no)"><b style="color:var(--no)">${c.ant ? nR : "—"}</b>excluídos</div>
+    <div style="border-color:var(--nc)"><b style="color:var(--nc)">${c.ant ? nP : "—"}</b>preços alterados</div>`;
+  const T = [["novos", "Incluídos", nN], ["removidos", "Excluídos", nR], ["precos", "Preço alterado", nP], ["mantidos", "Mantidos", c.mantidos.length], ["todos", "Todos", cur.itens.length]];
+  if (tab === "auto") tab = !c.ant ? "todos" : nN ? "novos" : nR ? "removidos" : nP ? "precos" : "mantidos";
+  if (!c.ant) { tab = "todos"; }
+  $("#tabs").innerHTML = T.filter(t => c.ant || t[0] === "todos").map(t => `<button data-t="${t[0]}" class="${tab === t[0] ? "on" : ""}">${t[1]} (${t[2]})</button>`).join("");
+  tabela(c);
+}
+$("#tabs").onclick = e => { const b = e.target.closest("button"); if (b) { tab = b.dataset.t; desenhar(); } };
+$("#busca").oninput = () => tabela(comparar());
+$("#soPend").onchange = () => tabela(comparar());
+
+function tabela(c) {
+  const rem = tab === "removidos";
+  let lista = rem ? c.removidos : tab === "novos" ? c.novos : tab === "precos" ? c.alterados : tab === "mantidos" ? c.mantidos : cur.itens;
+  const altIds = new Set(c.alterados.map(x => x.i));
+  const preco = x => {
+    if (!x.p) return "";
+    if (!altIds.has(x.i)) return "R$ " + esc(x.p);
+    const a = num(c.mapAnt.get(x.i).p), b = num(x.p), d = b - a, pc = a ? (d / a * 100) : 0;
+    return `<s class="mut">R$ ${esc(c.mapAnt.get(x.i).p)}</s><br><b style="color:${d > 0 ? "var(--no)" : "var(--ok)"}">R$ ${esc(x.p)}</b>
+      <div class="mut" style="font-size:12px">${d > 0 ? "▲ +" : "▼ −"}R$ ${brl(Math.abs(d))} (${pc > 0 ? "+" : "−"}${Math.abs(pc).toFixed(1).replace(".", ",")}%)</div>`;
+  };
+  const q = $("#busca").value.toLowerCase();
+  if (q) lista = lista.filter(x => (x.t + " " + x.f).toLowerCase().includes(q));
+  if ($("#soPend").checked && !rem) lista = lista.filter(x => !x.l || !x.h);
+  const novosIds = new Set(c.novos.map(x => x.i));
+  $("#thead").innerHTML = `<tr><th>Produto</th><th>Preço</th><th>Fornecedor</th><th>LAUDO</th><th>HOMOLOGADO</th><th>Observação</th></tr>`;
+  const sel = (campo, v, i) => `<select class="${cls(v)}" data-c="${campo}" data-i="${i}">${OPC.map(o => `<option value="${o[0]}" ${o[0] === v ? "selected" : ""}>${o[1]}</option>`).join("")}</select>`;
+  $("#tbody").innerHTML = lista.length ? lista.map(x => rem
+    ? `<tr><td><span class="tag rem">excluído</span> ${esc(x.t)}</td><td>${x.p ? "R$ " + esc(x.p) : ""}</td><td>${esc(x.f)}</td><td>${esc(x.l) || "—"}</td><td>${esc(x.h) || "—"}</td><td>${esc(x.o)}</td></tr>`
+    : `<tr><td>${novosIds.has(x.i) && c.ant ? '<span class="tag">incluído</span> ' : ""}${altIds.has(x.i) ? '<span class="tag pr">preço alterado</span> ' : ""}${x.k ? `<a href="${esc(x.k)}" target="_blank" rel="noopener">${esc(x.t)}</a>` : esc(x.t)}</td>
+       <td>${preco(x)}</td>
+       <td><input type="text" value="${esc(x.f)}" data-c="f" data-i="${esc(x.i)}" placeholder="Fornecedor"></td>
+       <td>${sel("l", x.l, esc(x.i))}</td><td>${sel("h", x.h, esc(x.i))}</td>
+       <td><input type="text" value="${esc(x.o)}" data-c="o" data-i="${esc(x.i)}" placeholder="Observação"></td></tr>`).join("")
+    : `<tr><td colspan="6" class="mut">Nada para mostrar aqui.</td></tr>`;
+}
+
+$("#tbody").addEventListener("input", e => {
+  const el = e.target, campo = el.dataset.c; if (!campo) return;
+  const it = cur.itens.find(x => x.i === el.dataset.i); if (!it) return;
+  it[campo] = el.value;
+  if (el.tagName === "SELECT") el.className = cls(el.value);
+  clearTimeout(saveTimer); saveTimer = setTimeout(salvar, 700);
+});
+async function salvar() {
+  try { await db.collection("conferencias").doc(cur.id).update({ itens: cur.itens }); aviso("Salvo"); }
+  catch (e) { aviso("Erro ao salvar: " + e.message, true); }
+}
+
+/* ---------- Exportar / imprimir / apagar ---------- */
+$("#csv").onclick = () => {
+  const c = comparar(), nv = new Set(c.novos.map(x => x.i));
+  const alt = new Set(c.alterados.map(x => x.i));
+  const linhas = [["Situação", "Produto", "Preço", "Preço anterior", "Fornecedor", "LAUDO", "HOMOLOGADO", "Observação", "Link"]];
+  cur.itens.forEach(x => linhas.push([c.ant ? (nv.has(x.i) ? "INCLUÍDO" : alt.has(x.i) ? "PREÇO ALTERADO" : "MANTIDO") : "", x.t, x.p, alt.has(x.i) ? c.mapAnt.get(x.i).p : "", x.f, x.l, x.h, x.o, x.k]));
+  c.removidos.forEach(x => linhas.push(["EXCLUÍDO", x.t, "", x.p, x.f, x.l, x.h, x.o, x.k]));
+  const csv = "\ufeff" + linhas.map(l => l.map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(";")).join("\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+  a.download = `conferencia-fab-${cur.data}.csv`; a.click();
+};
+$("#imp").onclick = () => window.print();
+$("#apagar").onclick = async () => {
+  if (!cur || !confirm("Apagar a conferência de " + cur.data.split("-").reverse().join("/") + "? Isso não pode ser desfeito.")) return;
+  await db.collection("conferencias").doc(cur.id).delete(); carregar();
+};
+</script>
+</body>
+</html>
