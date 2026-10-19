@@ -10,7 +10,6 @@
 body{margin:0;font:15px/1.45 "Segoe UI",system-ui,sans-serif;color:var(--txt);background:var(--bg)}
 header{background:var(--azul);color:#fff;padding:14px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
 header h1{font-size:18px;margin:0;font-weight:600;letter-spacing:.2px}
-header .sp{flex:1}
 main{max-width:1280px;margin:0 auto;padding:20px}
 button,select,input,textarea{font:inherit}
 button{background:var(--azul2);color:#fff;border:0;border-radius:6px;padding:8px 14px;cursor:pointer}
@@ -22,7 +21,7 @@ button:disabled{opacity:.5;cursor:default}
 .card{background:#fff;border:1px solid var(--linha);border-radius:8px;padding:16px;margin-bottom:16px}
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 .hide{display:none!important}
-input[type=text],input[type=email],input[type=password],input[type=date],textarea,select{border:1px solid var(--linha);border-radius:6px;padding:7px 9px;background:#fff;color:var(--txt)}
+input[type=text],input[type=email],input[type=password],input[type=date],input[type=number],textarea,select{border:1px solid var(--linha);border-radius:6px;padding:7px 9px;background:#fff;color:var(--txt)}
 textarea{width:100%;min-height:110px}
 h2{font-size:16px;margin:0 0 10px}
 .mut{color:var(--mut)}
@@ -69,7 +68,7 @@ select.NC{background:#fff0d9;border-color:var(--nc);color:var(--nc);font-weight:
       <h2>Nova conferência</h2>
       <div class="row" style="margin-bottom:10px">
         <label>Data da conferência <input type="date" id="dataConf"></label>
-        <span class="mut">Será comparada com a conferência anterior.</span>
+        <label>Total que a loja mostra <input type="number" id="totalLoja" min="0" placeholder="ex.: 245" style="width:110px"></label>
       </div>
       <div id="drop">
         Arraste aqui os PDFs das páginas da loja (salvos pelo navegador com Ctrl+P → Salvar como PDF)<br>
@@ -82,7 +81,7 @@ select.NC{background:#fff0d9;border-color:var(--nc);color:var(--nc);font-weight:
         <textarea id="colar" placeholder="https://produto.mercadolivre.com.br/MLB-123456789-nome-do-produto-_JM&#10;https://..."></textarea>
       </details>
       <div class="row" style="margin-top:12px">
-        <button id="gerar">Gerar conferência</button>
+        <button id="gerar">Gerar e salvar conferência</button>
         <span id="gerarMsg" class="mut"></span>
       </div>
       <div id="diag"></div>
@@ -91,6 +90,7 @@ select.NC{background:#fff0d9;border-color:var(--nc);color:var(--nc);font-weight:
     <div class="card noprint">
       <div class="row">
         <label>Conferência: <select id="selConf"></select></label>
+        <label>Comparar com: <select id="selBase"></select></label>
         <button class="sec" id="csv">Exportar CSV</button>
         <button class="sec" id="imp">Imprimir</button>
         <button class="sec" id="apagar">Apagar esta conferência</button>
@@ -108,6 +108,11 @@ select.NC{background:#fff0d9;border-color:var(--nc);color:var(--nc);font-weight:
       <div class="wrap"><table><thead id="thead"></thead><tbody id="tbody"></tbody></table></div>
     </div>
     <p id="vazio" class="mut">Nenhuma conferência ainda. Gere a primeira acima.</p>
+
+    <div class="card noprint" id="histCard">
+      <h2>Histórico</h2>
+      <div class="wrap" id="historico"></div>
+    </div>
   </section>
 </main>
 <div id="msg" class="hide"></div>
@@ -136,10 +141,10 @@ const OPC = [["", "—"], ["SIM", "SIM"], ["NÃO", "NÃO"], ["NÃO CONFORMIDADE"
 const cls = v => v === "SIM" ? "SIM" : v === "NÃO" ? "NAO" : v === "NÃO CONFORMIDADE" ? "NC" : "";
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
-const REVISOES = 3;                       // quantas leituras completas antes de entregar
+const REVISOES = 3;                       // quantas leituras completas antes de salvar
 const SEM_NOME = "Nome não identificado";
 
-let confs = [], cur = null, tab = "novos", saveTimer = null;
+let confs = [], cur = null, baseId = "", tab = "novos", saveTimer = null;
 let diag = { links: 0, semId: [], dup: [] };
 
 function aviso(t, erro) {
@@ -147,6 +152,13 @@ function aviso(t, erro) {
   m.style.background = erro ? "#b3261e" : "";
   clearTimeout(aviso.t); aviso.t = setTimeout(() => m.classList.add("hide"), 3000);
 }
+
+/* ---------- Datas e rótulos ---------- */
+const dt = d => d.split("-").reverse().join("/");
+const hora = c => c.criadoEm?.seconds
+  ? new Date(c.criadoEm.seconds * 1000).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+  : "agora";
+const rotulo = c => `${dt(c.data)} ${hora(c)}`;
 
 /* ---------- Início (sem login) ---------- */
 $("#dataConf").valueAsDate = new Date();
@@ -163,7 +175,6 @@ const tituloDeUrl = u => {
     return m ? nomeValido(m[1].replace(/-/g, " ")) : "";
   } catch (e) { return ""; }
 };
-// Texto mais próximo do link que pareça nome de produto (último recurso)
 const nomeProximo = (cx, cy, tx) => tx
   .filter(t => !ehCodigo(t.s) && !/R\$/.test(t.s) && /[A-Za-zÀ-ú]{3,}/.test(t.s) && Math.abs(t.x - cx) < 160 && Math.abs(t.y - cy) < 60)
   .sort((a, b) => Math.hypot(a.x - cx, a.y - cy) - Math.hypot(b.x - cx, b.y - cy))
@@ -180,12 +191,9 @@ const maisComum = vals => {
 };
 
 /* ---------- Preço à vista ---------- */
-// "12x R$ 27,39": valor de parcela, não usar
 const ehParcela = (t, tx) => /\d+\s*x\s*R\$/i.test(t.s) ||
   tx.some(o => Math.abs(o.y - t.y) < 6 && o.x < t.x && t.x - o.x < 40 && /^\d+\s*x$/i.test(o.s));
-// "R$ 269,50 com Cupom": valor com cupom, não usar
 const ehCupom = (t, tx) => tx.some(o => Math.abs(o.y - t.y) < 6 && Math.abs(o.x - t.x) < 160 && /cupom/i.test(o.s));
-// Preço à vista = o R$ de maior fonte perto do link (o preço grande da página), fora de parcela e cupom
 const precoAVista = (cx, cy, tx) => {
   const cand = tx.filter(t => /R\$/.test(t.s) && Math.abs(t.x - cx) < 200 && Math.abs(t.y - cy) < 150 && !ehParcela(t, tx) && !ehCupom(t, tx));
   if (!cand.length) return "";
@@ -234,8 +242,7 @@ async function lerPDF(file) {
   return out;
 }
 
-// Junta ocorrências do mesmo produto: todas continuam como linhas,
-// mas com o mesmo nome (o mais frequente) e preço preenchido se uma delas não tiver
+// Um produto = um código de anúncio. Links repetidos do mesmo anúncio viram um só item.
 function unir(lista) {
   const grupos = new Map();
   for (const it of lista) {
@@ -245,13 +252,34 @@ function unir(lista) {
   const saida = [];
   for (const [base, ocorr] of grupos) {
     const nome = maisComum(ocorr.map(o => nomeValido(o.t)).filter(n => n && n !== SEM_NOME)) || SEM_NOME;
-    const precoBase = ocorr.map(o => o.p).find(Boolean) || "";
-    ocorr.forEach((o, idx) => {
-      if (idx > 0) diag.dup.push(nome);
-      saida.push({ ...o, i: base + "#" + (idx + 1), t: nome, p: o.p || precoBase });
+    if (ocorr.length > 1) diag.dup.push(nome);
+    saida.push({
+      i: base, t: nome,
+      k: ocorr.map(o => o.k).find(Boolean) || "",
+      p: maisComum(ocorr.map(o => o.p)),
+      l: "", h: "", o: ""
     });
   }
   return saida;
+}
+
+// Conferências salvas antes desta versão podem ter códigos com sufixo "#n": junta tudo no código base
+function normalizar(itens) {
+  const m = new Map();
+  for (const it of itens) {
+    const base = String(it.i).split("#")[0];
+    const x = m.get(base);
+    if (!x) m.set(base, { ...it, i: base });
+    else {
+      if (x.t === SEM_NOME && it.t !== SEM_NOME) x.t = it.t;
+      if (!x.p && it.p) x.p = it.p;
+      if (!x.k && it.k) x.k = it.k;
+      if (!x.l && it.l) x.l = it.l;
+      if (!x.h && it.h) x.h = it.h;
+      if (!x.o && it.o) x.o = it.o;
+    }
+  }
+  return [...m.values()];
 }
 
 async function lerTudo() {
@@ -259,10 +287,10 @@ async function lerTudo() {
   let itens = [];
   for (let i = 0; i < arquivos.length; i++) itens = itens.concat(await lerPDF(arquivos[i]));
   itens = itens.concat(lerTexto($("#colar").value));
-  return { itens: unir(itens), diag };
+  const linksTotal = diag.links;
+  return { itens: unir(itens), diag, linksTotal };
 }
 
-// Cruza as leituras: para cada linha, vale o nome e o preço mais votados entre as leituras
 function consenso(passagens) {
   const ref = passagens.reduce((a, b) => b.itens.length > a.itens.length ? b : a).itens;
   const mesmo = passagens.every(p => p.itens.length === ref.length);
@@ -305,26 +333,25 @@ $("#gerar").onclick = async () => {
     const itens = rev.itens;
     if (!itens.length) throw new Error("Nenhum produto encontrado. O link da loja não é lido automaticamente: envie os PDFs das páginas da loja ou cole links de produtos (com código MLB).");
     if (itens.length > 3500) throw new Error("Limite de 3.500 produtos por conferência.");
+    const totalLoja = parseInt($("#totalLoja").value, 10) || null;
     const data = $("#dataConf").value || new Date().toISOString().slice(0, 10);
-    const mesmas = confs.filter(c => c.data === data);
-    if (mesmas.length && !confirm(`Já existe conferência em ${data.split("-").reverse().join("/")}. Substituir pela nova? As marcações de LAUDO/HOMOLOGADO desta data serão perdidas.`)) {
-      btn.disabled = false; msg.textContent = ""; return;
-    }
-    const ant = confs.filter(c => c.data < data)[0];   // conferência anterior (data menor)
+
+    // Marcações LAUDO/HOMOLOGADO/Observação: herdadas da versão mais recente até esta data
+    const ant = confs.find(c => c.data <= data);
     if (ant) {
       const mp = new Map(ant.itens.map(x => [x.i, x]));
       for (const it of itens) { const o = mp.get(it.i); if (o) { it.l = o.l; it.h = o.h; it.o = o.o; } }
     }
     msg.textContent = "Salvando…";
-    const ref = await db.collection("conferencias").add({ data, criadoEm: firebase.firestore.FieldValue.serverTimestamp(), itens });
-    await Promise.all(mesmas.map(c => db.collection("conferencias").doc(c.id).delete()));
-    arquivos = []; mostraArqs(); $("#colar").value = ""; $("#arq").value = "";
-    msg.textContent = `${itens.length} produtos salvos.`;
-    mostraDiag(itens.length, rev, passagens[REVISOES - 1].diag);
+    const ref = await db.collection("conferencias").add({ data, totalLoja, criadoEm: firebase.firestore.FieldValue.serverTimestamp(), itens });
+    arquivos = []; mostraArqs(); $("#colar").value = ""; $("#arq").value = ""; $("#totalLoja").value = "";
+    baseId = "";
+    msg.textContent = `${itens.length} produtos salvos em ${dt(data)}.`;
+    mostraDiag(itens.length, rev, passagens[REVISOES - 1], totalLoja);
     await carregar(ref.id);
     const r = comparar();
     if (r.ant && (r.novos.length + r.removidos.length + r.alterados.length))
-      alert(`ATENÇÃO – alterações em relação à conferência anterior:\n\n• ${r.novos.length} item(ns) incluído(s)\n• ${r.removidos.length} item(ns) excluído(s)\n• ${r.alterados.length} preço(s) alterado(s)`);
+      alert(`ATENÇÃO – alterações em relação a ${rotulo(r.ant)}:\n\n• ${r.novos.length} item(ns) incluído(s)\n• ${r.removidos.length} item(ns) excluído(s)\n• ${r.alterados.length} preço(s) alterado(s)`);
   } catch (e) { msg.className = "err"; msg.textContent = e.message; }
   btn.disabled = false;
 };
@@ -332,20 +359,33 @@ $("#gerar").onclick = async () => {
 /* ---------- Dados ---------- */
 async function carregar(abrirId) {
   const snap = await db.collection("conferencias").orderBy("data", "desc").get();
-  confs = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => b.data.localeCompare(a.data) || (b.criadoEm?.seconds || 0) - (a.criadoEm?.seconds || 0));
-  $("#selConf").innerHTML = confs.map(c => `<option value="${c.id}">${c.data.split("-").reverse().join("/")} – ${c.itens.length} produtos</option>`).join("");
+  confs = snap.docs.map(d => { const v = d.data(); return { id: d.id, ...v, itens: normalizar(v.itens || []) }; })
+    .sort((a, b) => b.data.localeCompare(a.data) || (b.criadoEm?.seconds || 0) - (a.criadoEm?.seconds || 0));
+  $("#selConf").innerHTML = confs.map(c => `<option value="${c.id}">${rotulo(c)} – ${c.itens.length} produtos</option>`).join("");
   $("#vazio").classList.toggle("hide", !!confs.length);
   $("#vista").classList.toggle("hide", !confs.length);
-  if (confs.length) { $("#selConf").value = abrirId || confs[0].id; abrir(); }
+  desenhaHistorico();
+  if (confs.length) {
+    const manter = cur && confs.some(c => c.id === cur.id) ? cur.id : confs[0].id;
+    $("#selConf").value = abrirId || manter;
+    abrir();
+  }
 }
-$("#selConf").onchange = abrir;
+$("#selConf").onchange = () => { baseId = ""; abrir(); };
+$("#selBase").onchange = () => { baseId = $("#selBase").value; desenhar(); };
 
 function abrir() {
   cur = confs.find(c => c.id === $("#selConf").value);
   tab = "auto"; desenhar();
 }
+
+// Comparação escolhida pelo usuário; se não escolheu, a versão anterior mais recente
+function baseDe(rec) {
+  if (baseId && baseId !== rec.id) { const b = confs.find(c => c.id === baseId); if (b) return b; }
+  return confs[confs.indexOf(rec) + 1] || null;
+}
 function comparar() {
-  const i = confs.indexOf(cur), ant = confs[i + 1];
+  const ant = baseDe(cur);
   const idsAnt = new Set((ant?.itens || []).map(x => x.i)), idsCur = new Set(cur.itens.map(x => x.i));
   const mapAnt = new Map((ant?.itens || []).map(x => [x.i, x]));
   const alterados = ant ? cur.itens.filter(x => {
@@ -362,20 +402,47 @@ function comparar() {
 const num = p => { if (!p) return null; const n = parseFloat(String(p).replace(/\./g, "").replace(",", ".")); return isNaN(n) ? null : n; };
 const brl = n => n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+/* ---------- Histórico ---------- */
+function desenhaHistorico() {
+  const el = $("#historico");
+  if (!confs.length) { el.innerHTML = ""; return; }
+  el.innerHTML = `<table style="min-width:0"><thead><tr><th>Data</th><th>Hora</th><th>Produtos</th><th>Total na loja</th><th></th></tr></thead><tbody>${confs.map(c => `<tr>
+      <td>${dt(c.data)}</td><td>${hora(c)}</td><td>${c.itens.length}</td><td>${c.totalLoja ?? "—"}</td>
+      <td><button class="sec" data-ver="${c.id}">Abrir</button>
+          <button class="sec" data-base="${c.id}" ${c.id === cur?.id ? "disabled" : ""}>Comparar com esta</button></td>
+    </tr>`).join("")}</tbody></table>`;
+}
+$("#historico").onclick = e => {
+  const v = e.target.dataset.ver, b = e.target.dataset.base;
+  if (v) { $("#selConf").value = v; baseId = ""; abrir(); }
+  if (b) { baseId = b; desenhar(); aviso("Comparando com " + rotulo(confs.find(c => c.id === b))); }
+};
+
+function desenhaSelBase() {
+  const opts = confs.filter(c => c.id !== cur.id)
+    .map(c => `<option value="${c.id}">${rotulo(c)} – ${c.itens.length} produtos</option>`).join("");
+  $("#selBase").innerHTML = `<option value="">Automático (versão anterior)</option>` + opts;
+  $("#selBase").value = baseId && confs.some(c => c.id === baseId && c.id !== cur.id) ? baseId : "";
+}
+
 /* ---------- Tela ---------- */
 function desenhar() {
   if (!cur) return;
+  desenhaSelBase();
   const c = comparar();
-  const dt = d => d.split("-").reverse().join("/");
   const nN = c.novos.length, nR = c.removidos.length, nP = c.alterados.length;
+  const lab = c.ant ? rotulo(c.ant) : "";
   let al = "";
   if (!c.ant) al = `<div class="alerta info">Primeira conferência: ainda não há com o que comparar.</div>`;
-  else if (nN + nR + nP === 0) al = `<div class="alerta ok">Sem alterações desde ${dt(c.ant.data)}: nenhum item incluído ou excluído e nenhum preço alterado.</div>`;
-  else al = `<div class="alerta warn"><b>ATENÇÃO – houve alterações desde ${dt(c.ant.data)}:</b>
+  else if (nN + nR + nP === 0) al = `<div class="alerta ok">Sem alterações em relação a ${lab}: nenhum item incluído ou excluído e nenhum preço alterado.</div>`;
+  else al = `<div class="alerta warn"><b>ATENÇÃO – alterações em relação a ${lab}:</b>
     <span>${nN} item(ns) incluído(s)</span><span>${nR} item(ns) excluído(s)</span><span>${nP} preço(s) alterado(s)</span></div>`;
+  const diffLoja = cur.totalLoja ? cur.totalLoja - cur.itens.length : null;
+  const cardLoja = cur.totalLoja ? `<div style="border-color:${diffLoja ? "var(--no)" : "var(--ok)"}"><b>${cur.totalLoja}</b>na loja${diffLoja ? " (" + (diffLoja > 0 ? "faltam " : "sobram ") + Math.abs(diffLoja) + ")" : " (bate)"}</div>` : "";
   $("#resumo").innerHTML = al + `
-    <div><b>${cur.itens.length}</b>produtos nesta semana</div>
-    <div><b>${c.ant ? c.ant.itens.length : "—"}</b>${c.ant ? "na conferência de " + dt(c.ant.data) : "sem conferência anterior"}</div>
+    <div><b>${cur.itens.length}</b>produtos em ${rotulo(cur)}</div>
+    ${cardLoja}
+    <div><b>${c.ant ? c.ant.itens.length : "—"}</b>${c.ant ? "em " + lab : "sem versão para comparar"}</div>
     <div style="border-color:var(--novo)"><b style="color:var(--novo)">${c.ant ? nN : "—"}</b>incluídos</div>
     <div style="border-color:var(--no)"><b style="color:var(--no)">${c.ant ? nR : "—"}</b>excluídos</div>
     <div style="border-color:var(--nc)"><b style="color:var(--nc)">${c.ant ? nP : "—"}</b>preços alterados</div>`;
@@ -440,27 +507,35 @@ $("#csv").onclick = () => {
   a.download = `conferencia-fab-${cur.data}.csv`; a.click();
 };
 $("#imp").onclick = () => window.print();
-function mostraDiag(total, rev, d) {
-  const cut = s => esc(s.length > 110 ? s.slice(0, 110) + "…" : s);
+
+function mostraDiag(total, rev, passagem, totalLoja) {
+  const d = passagem.diag, cut = s => esc(s.length > 110 ? s.slice(0, 110) + "…" : s);
   const concord = rev.mesmo
     ? (rev.divergencias ? `${rev.divergencias} produto(s) com leitura divergente, resolvido(s) pela maioria` : "todas as leituras concordaram")
-    : "a quantidade de linhas variou entre as leituras (verifique)";
+    : "a quantidade de produtos variou entre as leituras (verifique)";
+  const diff = totalLoja ? totalLoja - total : null;
+  const comparaLoja = totalLoja
+    ? (diff === 0 ? `<b style="color:var(--ok)">bate com a loja (${totalLoja})</b>`
+      : `<b style="color:var(--no)">${diff > 0 ? "faltam " + diff : "sobram " + (-diff)} em relação à loja (${totalLoja})</b>`)
+    : `<span class="mut">total da loja não informado</span>`;
   $("#diag").innerHTML = `<details open style="margin-top:10px"><summary>Relatório da leitura</summary>
     <p class="mut" style="margin:6px 0">Revisões: ${REVISOES} leituras completas · ${concord}</p>
-    <p class="mut" style="margin:6px 0">${d.links} links lidos · <b>${total} linhas</b> · ${d.dup.length} repetida(s) · sem nome: ${rev.semNome} · sem preço: ${rev.semPreco}</p>
-    ${d.dup.length ? `<p style="margin:6px 0"><b>Repetidos (aparecem mais de uma vez):</b></p><ul>${d.dup.map(t => `<li>${cut(t)}</li>`).join("")}</ul>` : ""}
-    ${d.semId.length ? `<details><summary class="mut">${d.semId.length} links sem código de produto (menus, rodapé, filtros…)</summary><ul>${d.semId.slice(0, 40).map(u => `<li>${cut(u)}</li>`).join("")}</ul></details>` : ""}
+    <p style="margin:6px 0"><b>${total} produtos distintos</b> · ${passagem.linksTotal} links lidos · ${comparaLoja}</p>
+    <p class="mut" style="margin:6px 0">sem nome: ${rev.semNome} · sem preço: ${rev.semPreco}</p>
+    ${d.dup.length ? `<p style="margin:6px 0"><b>Produtos que aparecem mais de uma vez nas páginas (contados uma só vez):</b></p><ul>${d.dup.map(t => `<li>${cut(t)}</li>`).join("")}</ul>` : ""}
+    ${d.semId.length ? `<details><summary class="mut">${d.semId.length} links sem código de produto (menus, rodapé, filtros… confira se algum é produto)</summary><ul>${d.semId.slice(0, 300).map(u => `<li>${cut(u)}</li>`).join("")}</ul></details>` : ""}
   </details>`;
 }
+
 $("#zerarTudo").onclick = async () => {
   if (!confs.length) return;
   if (prompt(`Isso apaga TODAS as ${confs.length} conferências. Digite APAGAR para confirmar:`) !== "APAGAR") return;
   await Promise.all(confs.map(c => db.collection("conferencias").doc(c.id).delete()));
-  $("#diag").innerHTML = ""; aviso("Tudo apagado"); carregar();
+  $("#diag").innerHTML = ""; baseId = ""; aviso("Tudo apagado"); carregar();
 };
 $("#apagar").onclick = async () => {
-  if (!cur || !confirm("Apagar a conferência de " + cur.data.split("-").reverse().join("/") + "? Isso não pode ser desfeito.")) return;
-  await db.collection("conferencias").doc(cur.id).delete(); carregar();
+  if (!cur || !confirm("Apagar a conferência de " + rotulo(cur) + "? Isso não pode ser desfeito.")) return;
+  await db.collection("conferencias").doc(cur.id).delete(); baseId = ""; carregar();
 };
 </script>
 </body>
