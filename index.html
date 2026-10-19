@@ -94,7 +94,6 @@ select.NC{background:#fff0d9;border-color:var(--nc);color:var(--nc);font-weight:
         <button class="sec" id="csv">Exportar CSV</button>
         <button class="sec" id="imp">Imprimir</button>
         <button class="sec" id="apagar">Apagar esta conferência</button>
-        <button class="sec" id="zerar">Zerar este dia</button>
         <button class="sec" id="zerarTudo">Apagar tudo</button>
       </div>
     </div>
@@ -103,7 +102,7 @@ select.NC{background:#fff0d9;border-color:var(--nc);color:var(--nc);font-weight:
       <div class="resumo" id="resumo"></div>
       <div class="tabs noprint" id="tabs"></div>
       <div class="row noprint" style="margin-bottom:10px">
-        <input type="text" id="busca" placeholder="Buscar produto ou fornecedor" style="min-width:280px">
+        <input type="text" id="busca" placeholder="Buscar produto" style="min-width:280px">
         <label><input type="checkbox" id="soPend"> Só pendentes (sem LAUDO ou HOMOLOGADO)</label>
       </div>
       <div class="wrap"><table><thead id="thead"></thead><tbody id="tbody"></tbody></table></div>
@@ -157,7 +156,7 @@ const tituloDeUrl = u => {
   return m ? decodeURIComponent(m[1]).replace(/-/g, " ") : "";
 };
 const hash = s => { let h = 5381; for (const c of s.toLowerCase().trim()) h = ((h << 5) + h + c.charCodeAt(0)) >>> 0; return "T" + h.toString(16); };
-const novoItem = (i, t, k, p) => ({ i, t: t || i, k: k || "", p: p || "", f: "", l: "", h: "", o: "" });
+const novoItem = (i, t, k, p) => ({ i, t: t || i, k: k || "", p: p || "", l: "", h: "", o: "" });
 
 function lerTexto(txt) {
   const out = [], linhas = txt.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
@@ -183,9 +182,12 @@ async function lerPDF(file) {
       const id = idDe(a.url); if (!id) { diag.semId.push(a.url); continue; }
       const [x1, y1, x2, y2] = a.rect;
       const dentro = tx.filter(t => t.x >= x1 - 2 && t.x <= x2 + 2 && t.y >= y1 - 3 && t.y <= y2 + 3);
-      const abaixo = tx.filter(t => t.x >= x1 - 5 && t.x <= x2 + 5 && t.y < y1 && t.y > y1 - 110)
-        .sort((a, b) => b.y - a.y).map(t => t.s).join(" ");
-      const pm = abaixo.match(/R\$\s*([\d.]+(?:,\d{2})?)/);
+      const cx = (x1 + x2) / 2, cy = (y1 + y2) / 2;
+      const perto = tx.filter(t => /R\$/.test(t.s) && Math.abs(t.x - cx) < 150 && Math.abs(t.y - cy) < 130)
+        .sort((a, b) => Math.hypot(a.x - cx, a.y - cy) - Math.hypot(b.x - cx, b.y - cy))[0];
+      const trecho = perto ? tx.filter(t => Math.abs(t.y - perto.y) < 4 && t.x >= perto.x - 2 && t.x < perto.x + 90)
+        .sort((a, b) => a.x - b.x).map(t => t.s).join(" ") : "";
+      const pm = trecho.match(/R\$\s*([\d.]+(?:,\d{2})?)/);
       out.push(novoItem(id, dentro.map(t => t.s).join(" ") || tituloDeUrl(a.url), a.url, pm ? pm[1] : ""));
     }
   }
@@ -193,13 +195,13 @@ async function lerPDF(file) {
 }
 
 function unir(lista) {
-  const m = new Map();
-  for (const it of lista) {
-    const x = m.get(it.i);
-    if (!x) m.set(it.i, it);
-    else { diag.dup.push(x.t); if (it.t.length > x.t.length) x.t = it.t; if (!x.p && it.p) x.p = it.p; if (!x.k && it.k) x.k = it.k; }
-  }
-  return [...m.values()];
+  const cont = new Map();
+  return lista.map(it => {
+    const n = (cont.get(it.i) || 0) + 1;
+    cont.set(it.i, n);
+    if (n > 1) diag.dup.push(it.t);
+    return { ...it, i: it.i + "#" + n };
+  });
 }
 
 /* ---------- Upload ---------- */
@@ -229,7 +231,7 @@ $("#gerar").onclick = async () => {
     const ant = confs.filter(c => c.data < data)[0];   // conferência anterior (data menor)
     if (ant) {
       const mp = new Map(ant.itens.map(x => [x.i, x]));
-      for (const it of itens) { const o = mp.get(it.i); if (o) { it.f = o.f; it.l = o.l; it.h = o.h; it.o = o.o; } }
+      for (const it of itens) { const o = mp.get(it.i); if (o) { it.l = o.l; it.h = o.h; it.o = o.o; } }
     }
     msg.textContent = "Salvando…";
     const ref = await db.collection("conferencias").add({ data, criadoEm: firebase.firestore.FieldValue.serverTimestamp(), itens });
@@ -310,26 +312,25 @@ function tabela(c) {
   let lista = rem ? c.removidos : tab === "novos" ? c.novos : tab === "precos" ? c.alterados : tab === "mantidos" ? c.mantidos : cur.itens;
   const altIds = new Set(c.alterados.map(x => x.i));
   const preco = x => {
-    if (!x.p) return "";
+    if (!x.p) return `<span class="mut">sem preço</span>`;
     if (!altIds.has(x.i)) return "R$ " + esc(x.p);
     const a = num(c.mapAnt.get(x.i).p), b = num(x.p), d = b - a, pc = a ? (d / a * 100) : 0;
     return `<s class="mut">R$ ${esc(c.mapAnt.get(x.i).p)}</s><br><b style="color:${d > 0 ? "var(--no)" : "var(--ok)"}">R$ ${esc(x.p)}</b>
       <div class="mut" style="font-size:12px">${d > 0 ? "▲ +" : "▼ −"}R$ ${brl(Math.abs(d))} (${pc > 0 ? "+" : "−"}${Math.abs(pc).toFixed(1).replace(".", ",")}%)</div>`;
   };
   const q = $("#busca").value.toLowerCase();
-  if (q) lista = lista.filter(x => (x.t + " " + x.f).toLowerCase().includes(q));
+  if (q) lista = lista.filter(x => x.t.toLowerCase().includes(q));
   if ($("#soPend").checked && !rem) lista = lista.filter(x => !x.l || !x.h);
   const novosIds = new Set(c.novos.map(x => x.i));
-  $("#thead").innerHTML = `<tr><th>Produto</th><th>Preço</th><th>Fornecedor</th><th>LAUDO</th><th>HOMOLOGADO</th><th>Observação</th></tr>`;
+  $("#thead").innerHTML = `<tr><th>Produto</th><th>Preço</th><th>LAUDO</th><th>HOMOLOGADO</th><th>Observação</th></tr>`;
   const sel = (campo, v, i) => `<select class="${cls(v)}" data-c="${campo}" data-i="${i}">${OPC.map(o => `<option value="${o[0]}" ${o[0] === v ? "selected" : ""}>${o[1]}</option>`).join("")}</select>`;
   $("#tbody").innerHTML = lista.length ? lista.map(x => rem
-    ? `<tr><td><span class="tag rem">excluído</span> ${esc(x.t)}</td><td>${x.p ? "R$ " + esc(x.p) : ""}</td><td>${esc(x.f)}</td><td>${esc(x.l) || "—"}</td><td>${esc(x.h) || "—"}</td><td>${esc(x.o)}</td></tr>`
+    ? `<tr><td><span class="tag rem">excluído</span> ${esc(x.t)}</td><td>${x.p ? "R$ " + esc(x.p) : ""}</td><td>${esc(x.l) || "—"}</td><td>${esc(x.h) || "—"}</td><td>${esc(x.o)}</td></tr>`
     : `<tr><td>${novosIds.has(x.i) && c.ant ? '<span class="tag">incluído</span> ' : ""}${altIds.has(x.i) ? '<span class="tag pr">preço alterado</span> ' : ""}${x.k ? `<a href="${esc(x.k)}" target="_blank" rel="noopener">${esc(x.t)}</a>` : esc(x.t)}</td>
        <td>${preco(x)}</td>
-       <td><input type="text" value="${esc(x.f)}" data-c="f" data-i="${esc(x.i)}" placeholder="Fornecedor"></td>
        <td>${sel("l", x.l, esc(x.i))}</td><td>${sel("h", x.h, esc(x.i))}</td>
        <td><input type="text" value="${esc(x.o)}" data-c="o" data-i="${esc(x.i)}" placeholder="Observação"></td></tr>`).join("")
-    : `<tr><td colspan="6" class="mut">Nada para mostrar aqui.</td></tr>`;
+    : `<tr><td colspan="5" class="mut">Nada para mostrar aqui.</td></tr>`;
 }
 
 $("#tbody").addEventListener("input", e => {
@@ -348,10 +349,10 @@ async function salvar() {
 $("#csv").onclick = () => {
   const c = comparar(), nv = new Set(c.novos.map(x => x.i));
   const alt = new Set(c.alterados.map(x => x.i));
-  const linhas = [["Situação", "Produto", "Preço", "Preço anterior", "Fornecedor", "LAUDO", "HOMOLOGADO", "Observação", "Link"]];
-  cur.itens.forEach(x => linhas.push([c.ant ? (nv.has(x.i) ? "INCLUÍDO" : alt.has(x.i) ? "PREÇO ALTERADO" : "MANTIDO") : "", x.t, x.p, alt.has(x.i) ? c.mapAnt.get(x.i).p : "", x.f, x.l, x.h, x.o, x.k]));
-  c.removidos.forEach(x => linhas.push(["EXCLUÍDO", x.t, "", x.p, x.f, x.l, x.h, x.o, x.k]));
-  const csv = "\ufeff" + linhas.map(l => l.map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(";")).join("\n");
+  const linhas = [["Situação", "Produto", "Preço", "Preço anterior", "LAUDO", "HOMOLOGADO", "Observação", "Link"]];
+  cur.itens.forEach(x => linhas.push([c.ant ? (nv.has(x.i) ? "INCLUÍDO" : alt.has(x.i) ? "PREÇO ALTERADO" : "MANTIDO") : "", x.t, x.p, alt.has(x.i) ? c.mapAnt.get(x.i).p : "", x.l, x.h, x.o, x.k]));
+  c.removidos.forEach(x => linhas.push(["EXCLUÍDO", x.t, "", x.p, x.l, x.h, x.o, x.k]));
+  const csv = "﻿" + linhas.map(l => l.map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(";")).join("\n");
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
   a.download = `conferencia-fab-${cur.data}.csv`; a.click();
@@ -360,18 +361,11 @@ $("#imp").onclick = () => window.print();
 function mostraDiag(total) {
   const d = diag, cut = s => esc(s.length > 110 ? s.slice(0, 110) + "…" : s);
   $("#diag").innerHTML = `<details open style="margin-top:10px"><summary>Relatório da leitura</summary>
-    <p class="mut" style="margin:6px 0">${d.links} links lidos nos PDFs · ${d.links - d.semId.length} de produtos · ${d.dup.length} repetido(s) unido(s) · <b>${total} produtos únicos</b></p>
+    <p class="mut" style="margin:6px 0">${d.links} links lidos nos PDFs · ${d.links - d.semId.length} de produtos · ${d.dup.length} repetido(s) · <b>${total} linhas</b></p>
     ${d.dup.length ? `<p style="margin:6px 0"><b>Repetidos (apareceram mais de uma vez):</b></p><ul>${d.dup.map(t => `<li>${cut(t)}</li>`).join("")}</ul>` : ""}
     ${d.semId.length ? `<details><summary class="mut">${d.semId.length} links sem código de produto (menus, rodapé, filtros…)</summary><ul>${d.semId.slice(0, 40).map(u => `<li>${cut(u)}</li>`).join("")}</ul></details>` : ""}
   </details>`;
 }
-$("#zerar").onclick = async () => {
-  if (!cur) return;
-  const d = cur.data, mesmas = confs.filter(c => c.data === d);
-  if (!confirm(`Zerar o dia ${d.split("-").reverse().join("/")}? Serão apagadas ${mesmas.length} conferência(s) desta data. Não pode ser desfeito.`)) return;
-  await Promise.all(mesmas.map(c => db.collection("conferencias").doc(c.id).delete()));
-  $("#diag").innerHTML = ""; aviso("Dia zerado"); carregar();
-};
 $("#zerarTudo").onclick = async () => {
   if (!confs.length) return;
   if (prompt(`Isso apaga TODAS as ${confs.length} conferências. Digite APAGAR para confirmar:`) !== "APAGAR") return;
