@@ -136,6 +136,9 @@ const OPC = [["", "—"], ["SIM", "SIM"], ["NÃO", "NÃO"], ["NÃO CONFORMIDADE"
 const cls = v => v === "SIM" ? "SIM" : v === "NÃO" ? "NAO" : v === "NÃO CONFORMIDADE" ? "NC" : "";
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
+const REVISOES = 3;                       // quantas leituras completas antes de entregar
+const SEM_NOME = "Nome não identificado";
+
 let confs = [], cur = null, tab = "novos", saveTimer = null;
 let diag = { links: 0, semId: [], dup: [] };
 
@@ -149,15 +152,53 @@ function aviso(t, erro) {
 $("#dataConf").valueAsDate = new Date();
 carregar().catch(e => aviso("Erro ao conectar ao Firebase: " + e.message, true));
 
-/* ---------- Leitura de produtos ---------- */
+/* ---------- Nomes e códigos ---------- */
 const idDe = u => { const m = String(u).match(/(MLBU?)[-_]?(\d{6,})/i); return m ? m[1].toUpperCase() + m[2] : null; };
+const ehCodigo = s => /^\s*MLBU?-?\d{6,}\s*$/i.test(String(s ?? ""));
+const nomeValido = s => { const t = String(s ?? "").replace(/\s+/g, " ").trim(); return t.length > 2 && !ehCodigo(t) ? t : ""; };
 const tituloDeUrl = u => {
-  const m = String(u).match(/MLBU?-?\d+-(.+?)-?_(?:JM|NQ|Q)/i);
-  return m ? decodeURIComponent(m[1]).replace(/-/g, " ") : "";
+  try {
+    const d = decodeURIComponent(String(u));
+    const m = d.match(/MLBU?-?\d+-(.+?)-?_(?:JM|NQ|Q)/i) || d.match(/MLBU?-?\d+-([^\/?#_]+)/i);
+    return m ? nomeValido(m[1].replace(/-/g, " ")) : "";
+  } catch (e) { return ""; }
 };
-const hash = s => { let h = 5381; for (const c of s.toLowerCase().trim()) h = ((h << 5) + h + c.charCodeAt(0)) >>> 0; return "T" + h.toString(16); };
-const novoItem = (i, t, k, p) => ({ i, t: t || i, k: k || "", p: p || "", l: "", h: "", o: "" });
+// Texto mais próximo do link que pareça nome de produto (último recurso)
+const nomeProximo = (cx, cy, tx) => tx
+  .filter(t => !ehCodigo(t.s) && !/R\$/.test(t.s) && /[A-Za-zÀ-ú]{3,}/.test(t.s) && Math.abs(t.x - cx) < 160 && Math.abs(t.y - cy) < 60)
+  .sort((a, b) => Math.hypot(a.x - cx, a.y - cy) - Math.hypot(b.x - cx, b.y - cy))
+  .map(t => t.s)[0] || "";
 
+const hash = s => { let h = 5381; for (const c of s.toLowerCase().trim()) h = ((h << 5) + h + c.charCodeAt(0)) >>> 0; return "T" + h.toString(16); };
+const novoItem = (i, t, k, p) => ({ i, t: nomeValido(t) || SEM_NOME, k: k || "", p: p || "", l: "", h: "", o: "" });
+const maisComum = vals => {
+  const c = new Map();
+  for (const v of vals) if (v) c.set(v, (c.get(v) || 0) + 1);
+  let best = "", n = 0;
+  for (const [v, k] of c) if (k > n || (k === n && v.length > best.length)) { best = v; n = k; }
+  return best;
+};
+
+/* ---------- Preço à vista ---------- */
+// "12x R$ 27,39": valor de parcela, não usar
+const ehParcela = (t, tx) => /\d+\s*x\s*R\$/i.test(t.s) ||
+  tx.some(o => Math.abs(o.y - t.y) < 6 && o.x < t.x && t.x - o.x < 40 && /^\d+\s*x$/i.test(o.s));
+// "R$ 269,50 com Cupom": valor com cupom, não usar
+const ehCupom = (t, tx) => tx.some(o => Math.abs(o.y - t.y) < 6 && Math.abs(o.x - t.x) < 160 && /cupom/i.test(o.s));
+// Preço à vista = o R$ de maior fonte perto do link (o preço grande da página), fora de parcela e cupom
+const precoAVista = (cx, cy, tx) => {
+  const cand = tx.filter(t => /R\$/.test(t.s) && Math.abs(t.x - cx) < 200 && Math.abs(t.y - cy) < 150 && !ehParcela(t, tx) && !ehCupom(t, tx));
+  if (!cand.length) return "";
+  const maior = Math.max(...cand.map(t => Math.round(t.h)));
+  const rs = cand.filter(t => Math.round(t.h) === maior)
+    .sort((a, b) => Math.hypot(a.x - cx, a.y - cy) - Math.hypot(b.x - cx, b.y - cy))[0];
+  const trecho = tx.filter(t => Math.abs(t.y - rs.y) < 6 && t.x >= rs.x - 2 && t.x < rs.x + 120)
+    .sort((a, b) => a.x - b.x).map(t => t.s).join(" ");
+  const m = trecho.match(/R\$\s*([\d.]+(?:,\d{2})?)/);
+  return m ? m[1] : "";
+};
+
+/* ---------- Leitura ---------- */
 function lerTexto(txt) {
   const out = [], linhas = txt.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
   const comLink = linhas.some(l => idDe(l));
@@ -175,33 +216,69 @@ async function lerPDF(file) {
   for (let n = 1; n <= pdf.numPages; n++) {
     const pg = await pdf.getPage(n);
     const [tc, an] = await Promise.all([pg.getTextContent(), pg.getAnnotations()]);
-    const tx = tc.items.filter(t => t.str.trim()).map(t => ({ s: t.str.trim(), x: t.transform[4], y: t.transform[5] }));
+    const tx = tc.items.filter(t => t.str.trim()).map(t => ({
+      s: t.str.trim(), x: t.transform[4], y: t.transform[5], h: t.height || Math.abs(t.transform[3]) || 0
+    }));
     for (const a of an) {
       if (a.subtype !== "Link" || !a.url) continue;
       diag.links++;
       const id = idDe(a.url); if (!id) { diag.semId.push(a.url); continue; }
       const [x1, y1, x2, y2] = a.rect;
-      const dentro = tx.filter(t => t.x >= x1 - 2 && t.x <= x2 + 2 && t.y >= y1 - 3 && t.y <= y2 + 3);
       const cx = (x1 + x2) / 2, cy = (y1 + y2) / 2;
-      const perto = tx.filter(t => /R\$/.test(t.s) && Math.abs(t.x - cx) < 150 && Math.abs(t.y - cy) < 130)
-        .sort((a, b) => Math.hypot(a.x - cx, a.y - cy) - Math.hypot(b.x - cx, b.y - cy))[0];
-      const trecho = perto ? tx.filter(t => Math.abs(t.y - perto.y) < 4 && t.x >= perto.x - 2 && t.x < perto.x + 90)
-        .sort((a, b) => a.x - b.x).map(t => t.s).join(" ") : "";
-      const pm = trecho.match(/R\$\s*([\d.]+(?:,\d{2})?)/);
-      out.push(novoItem(id, dentro.map(t => t.s).join(" ") || tituloDeUrl(a.url), a.url, pm ? pm[1] : ""));
+      const dentro = tx.filter(t => t.x >= x1 - 2 && t.x <= x2 + 2 && t.y >= y1 - 3 && t.y <= y2 + 3)
+        .filter(t => !ehCodigo(t.s) && !/R\$/.test(t.s)).map(t => t.s).join(" ");
+      const titulo = nomeValido(dentro) || tituloDeUrl(a.url) || nomeProximo(cx, cy, tx);
+      out.push(novoItem(id, titulo, a.url, precoAVista(cx, cy, tx)));
     }
   }
   return out;
 }
 
+// Junta ocorrências do mesmo produto: todas continuam como linhas,
+// mas com o mesmo nome (o mais frequente) e preço preenchido se uma delas não tiver
 function unir(lista) {
-  const cont = new Map();
-  return lista.map(it => {
-    const n = (cont.get(it.i) || 0) + 1;
-    cont.set(it.i, n);
-    if (n > 1) diag.dup.push(it.t);
-    return { ...it, i: it.i + "#" + n };
+  const grupos = new Map();
+  for (const it of lista) {
+    if (!grupos.has(it.i)) grupos.set(it.i, []);
+    grupos.get(it.i).push(it);
+  }
+  const saida = [];
+  for (const [base, ocorr] of grupos) {
+    const nome = maisComum(ocorr.map(o => nomeValido(o.t)).filter(n => n && n !== SEM_NOME)) || SEM_NOME;
+    const precoBase = ocorr.map(o => o.p).find(Boolean) || "";
+    ocorr.forEach((o, idx) => {
+      if (idx > 0) diag.dup.push(nome);
+      saida.push({ ...o, i: base + "#" + (idx + 1), t: nome, p: o.p || precoBase });
+    });
+  }
+  return saida;
+}
+
+async function lerTudo() {
+  diag = { links: 0, semId: [], dup: [] };
+  let itens = [];
+  for (let i = 0; i < arquivos.length; i++) itens = itens.concat(await lerPDF(arquivos[i]));
+  itens = itens.concat(lerTexto($("#colar").value));
+  return { itens: unir(itens), diag };
+}
+
+// Cruza as leituras: para cada linha, vale o nome e o preço mais votados entre as leituras
+function consenso(passagens) {
+  const ref = passagens.reduce((a, b) => b.itens.length > a.itens.length ? b : a).itens;
+  const mesmo = passagens.every(p => p.itens.length === ref.length);
+  let divergencias = 0;
+  const itens = ref.map((it, idx) => {
+    if (!mesmo) return it;
+    const nomes = passagens.map(p => { const n = p.itens[idx].t; return n === SEM_NOME ? "" : nomeValido(n); });
+    const precos = passagens.map(p => p.itens[idx].p);
+    if (new Set(nomes).size > 1 || new Set(precos).size > 1) divergencias++;
+    return { ...it, t: maisComum(nomes) || SEM_NOME, p: maisComum(precos) };
   });
+  return {
+    itens, mesmo, divergencias,
+    semNome: itens.filter(x => x.t === SEM_NOME).length,
+    semPreco: itens.filter(x => !x.p).length
+  };
 }
 
 /* ---------- Upload ---------- */
@@ -217,10 +294,15 @@ drop.ondrop = e => { e.preventDefault(); drop.classList.remove("over"); arquivos
 $("#gerar").onclick = async () => {
   const btn = $("#gerar"), msg = $("#gerarMsg"); btn.disabled = true; msg.className = "mut";
   try {
-    let itens = []; diag = { links: 0, semId: [], dup: [] }; $("#diag").innerHTML = "";
-    for (let i = 0; i < arquivos.length; i++) { msg.textContent = `Lendo PDF ${i + 1} de ${arquivos.length}…`; itens = itens.concat(await lerPDF(arquivos[i])); }
-    itens = itens.concat(lerTexto($("#colar").value));
-    itens = unir(itens);
+    $("#diag").innerHTML = "";
+    const passagens = [];
+    for (let r = 1; r <= REVISOES; r++) {
+      msg.textContent = `Revisão ${r} de ${REVISOES}: lendo ${arquivos.length} PDF(s) e o texto colado…`;
+      passagens.push(await lerTudo());
+    }
+    msg.textContent = "Cruzando as revisões…";
+    const rev = consenso(passagens);
+    const itens = rev.itens;
     if (!itens.length) throw new Error("Nenhum produto encontrado. O link da loja não é lido automaticamente: envie os PDFs das páginas da loja ou cole links de produtos (com código MLB).");
     if (itens.length > 3500) throw new Error("Limite de 3.500 produtos por conferência.");
     const data = $("#dataConf").value || new Date().toISOString().slice(0, 10);
@@ -238,7 +320,7 @@ $("#gerar").onclick = async () => {
     await Promise.all(mesmas.map(c => db.collection("conferencias").doc(c.id).delete()));
     arquivos = []; mostraArqs(); $("#colar").value = ""; $("#arq").value = "";
     msg.textContent = `${itens.length} produtos salvos.`;
-    mostraDiag(itens.length);
+    mostraDiag(itens.length, rev, passagens[REVISOES - 1].diag);
     await carregar(ref.id);
     const r = comparar();
     if (r.ant && (r.novos.length + r.removidos.length + r.alterados.length))
@@ -358,11 +440,15 @@ $("#csv").onclick = () => {
   a.download = `conferencia-fab-${cur.data}.csv`; a.click();
 };
 $("#imp").onclick = () => window.print();
-function mostraDiag(total) {
-  const d = diag, cut = s => esc(s.length > 110 ? s.slice(0, 110) + "…" : s);
+function mostraDiag(total, rev, d) {
+  const cut = s => esc(s.length > 110 ? s.slice(0, 110) + "…" : s);
+  const concord = rev.mesmo
+    ? (rev.divergencias ? `${rev.divergencias} produto(s) com leitura divergente, resolvido(s) pela maioria` : "todas as leituras concordaram")
+    : "a quantidade de linhas variou entre as leituras (verifique)";
   $("#diag").innerHTML = `<details open style="margin-top:10px"><summary>Relatório da leitura</summary>
-    <p class="mut" style="margin:6px 0">${d.links} links lidos nos PDFs · ${d.links - d.semId.length} de produtos · ${d.dup.length} repetido(s) · <b>${total} linhas</b></p>
-    ${d.dup.length ? `<p style="margin:6px 0"><b>Repetidos (apareceram mais de uma vez):</b></p><ul>${d.dup.map(t => `<li>${cut(t)}</li>`).join("")}</ul>` : ""}
+    <p class="mut" style="margin:6px 0">Revisões: ${REVISOES} leituras completas · ${concord}</p>
+    <p class="mut" style="margin:6px 0">${d.links} links lidos · <b>${total} linhas</b> · ${d.dup.length} repetida(s) · sem nome: ${rev.semNome} · sem preço: ${rev.semPreco}</p>
+    ${d.dup.length ? `<p style="margin:6px 0"><b>Repetidos (aparecem mais de uma vez):</b></p><ul>${d.dup.map(t => `<li>${cut(t)}</li>`).join("")}</ul>` : ""}
     ${d.semId.length ? `<details><summary class="mut">${d.semId.length} links sem código de produto (menus, rodapé, filtros…)</summary><ul>${d.semId.slice(0, 40).map(u => `<li>${cut(u)}</li>`).join("")}</ul></details>` : ""}
   </details>`;
 }
