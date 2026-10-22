@@ -4,95 +4,104 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Conferência semanal – Loja FAB</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-:root{--azul:#12305a;--azul2:#1d4a8a;--ceu:#e8eef7;--linha:#d3dbe8;--txt:#18212f;--mut:#5b6678;--bg:#f6f8fb;--ok:#1d7a46;--no:#b3261e;--nc:#a45f00;--novo:#0d6b8f}
+:root{--ink:#0e1b2e;--navy:#14284b;--navy2:#1f3c6e;--gold:#b08d4f;--gold2:#e6d3a8;--bg:#f3f1ec;--card:#fff;--line:#e4e0d6;--txt:#1b2536;--mut:#6b7385;--ok:#17724a;--no:#a8322a;--nc:#9a6200;--novo:#0e6c8c}
 *{box-sizing:border-box}
-body{margin:0;font:15px/1.45 "Segoe UI",system-ui,sans-serif;color:var(--txt);background:var(--bg)}
-header{background:var(--azul);color:#fff;padding:14px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
-header h1{font-size:18px;margin:0;font-weight:600;letter-spacing:.2px}
-main{max-width:1280px;margin:0 auto;padding:20px}
+body{margin:0;font:14.5px/1.5 Manrope,"Segoe UI",system-ui,sans-serif;color:var(--txt);background:var(--bg)}
+header{background:linear-gradient(120deg,var(--ink),var(--navy2));color:#fff;padding:26px 28px;border-bottom:3px solid var(--gold)}
+header h1{margin:0;font-size:22px;font-weight:700;letter-spacing:.3px}
+header p{margin:4px 0 0;color:var(--gold2);font-size:13px}
+main{max-width:1280px;margin:0 auto;padding:24px 20px 60px}
 button,select,input,textarea{font:inherit}
-button{background:var(--azul2);color:#fff;border:0;border-radius:6px;padding:8px 14px;cursor:pointer}
-button:hover{background:var(--azul)}
-button.sec{background:#fff;color:var(--azul);border:1px solid var(--linha)}
-button.sec:hover{background:var(--ceu)}
+button{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;border:0;border-radius:9px;padding:9px 18px;cursor:pointer;font-weight:600;transition:filter .15s}
+button:hover{filter:brightness(1.15)}
+button.sec{background:#fff;color:var(--navy);border:1px solid var(--line)}
+button.sec:hover{border-color:var(--gold);filter:none;background:#fbf8f1}
+button.gold{background:linear-gradient(135deg,#9c7a3c,var(--gold));color:#fff}
 button:disabled{opacity:.5;cursor:default}
-:focus-visible{outline:2px solid #f2b100;outline-offset:2px}
-.card{background:#fff;border:1px solid var(--linha);border-radius:8px;padding:16px;margin-bottom:16px}
-.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px;margin-bottom:18px;box-shadow:0 1px 2px rgba(20,40,75,.04),0 12px 32px -18px rgba(20,40,75,.18)}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
 .hide{display:none!important}
-input[type=text],input[type=email],input[type=password],input[type=date],input[type=number],textarea,select{border:1px solid var(--linha);border-radius:6px;padding:7px 9px;background:#fff;color:var(--txt)}
-textarea{width:100%;min-height:110px}
-h2{font-size:16px;margin:0 0 10px}
+input[type=text],input[type=date],input[type=number],select{border:1px solid var(--line);border-radius:9px;padding:8px 11px;background:#fff;color:var(--txt)}
+h2{font-size:17px;margin:0 0 14px;font-weight:700;color:var(--navy)}
+label{color:var(--mut);font-size:13px;font-weight:500}
 .mut{color:var(--mut)}
-.resumo{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
-.resumo div{background:#fff;border:1px solid var(--linha);border-radius:8px;padding:10px 16px;min-width:130px}
-.resumo b{display:block;font-size:24px}
-.tabs{display:flex;gap:4px;border-bottom:2px solid var(--linha);margin-bottom:12px;flex-wrap:wrap}
-.tabs button{background:none;color:var(--mut);border-radius:6px 6px 0 0;border-bottom:3px solid transparent;margin-bottom:-2px}
-.tabs button.on{color:var(--azul);border-bottom-color:var(--azul2);font-weight:600;background:var(--ceu)}
-.wrap{overflow-x:auto;background:#fff;border:1px solid var(--linha);border-radius:8px}
-table{border-collapse:collapse;width:100%;min-width:900px}
-th,td{padding:8px 10px;border-bottom:1px solid var(--linha);text-align:left;vertical-align:middle}
-th{background:var(--ceu);font-weight:600;position:sticky;top:0}
-td a{color:var(--azul2);text-decoration:none}td a:hover{text-decoration:underline}
-td select{width:100%;min-width:150px}
+.resumo{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.resumo>div{background:var(--card);border:1px solid var(--line);border-top:3px solid var(--navy);border-radius:12px;padding:14px 18px;min-width:140px;color:var(--mut);font-size:13px}
+.resumo b{display:block;font-size:28px;font-weight:800;color:var(--ink);line-height:1.2}
+.tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.tabs button{background:#fff;color:var(--mut);border:1px solid var(--line);border-radius:999px;padding:7px 16px}
+.tabs button.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.wrap{overflow-x:auto;background:#fff;border:1px solid var(--line);border-radius:14px}
+table{border-collapse:collapse;width:100%;min-width:640px}
+th,td{padding:11px 14px;border-bottom:1px solid #eeebe3;text-align:left;vertical-align:middle}
+th{background:#f8f6f0;font-weight:700;font-size:13px;color:var(--navy);position:sticky;top:0}
+tbody tr:hover{background:#fbfaf6}
+td a{color:var(--navy2);text-decoration:none;font-weight:500}td a:hover{text-decoration:underline}
 td input[type=text]{width:100%}
-select.SIM{background:#e3f4ea;border-color:var(--ok);color:var(--ok);font-weight:600}
-select.NAO{background:#fbe6e4;border-color:var(--no);color:var(--no);font-weight:600}
-select.NC{background:#fff0d9;border-color:var(--nc);color:var(--nc);font-weight:600}
-.tag{font-size:12px;padding:2px 8px;border-radius:10px;background:var(--novo);color:#fff;white-space:nowrap}
-.tag.rem{background:var(--no)}
-.alerta{flex:1 1 100%;border-radius:8px;padding:12px 16px;border:1px solid;display:flex;gap:18px;flex-wrap:wrap;align-items:center}
-.alerta.warn{background:#fff0d9;border-color:var(--nc);color:#6b3d00;font-size:16px}
+.tag{font-size:11px;padding:2px 9px;border-radius:10px;background:var(--novo);color:#fff;white-space:nowrap;font-weight:600}
+.tag.rem{background:var(--no)}.tag.pr{background:var(--nc)}.tag.rep{background:#7a8296}
+.alerta{flex:1 1 100%;border-radius:12px;padding:14px 20px;border:1px solid;display:flex;gap:20px;flex-wrap:wrap;align-items:center}
+.alerta.warn{background:#fdf3de;border-color:#e2c68a;color:#6b3d00;font-size:15px}
 .alerta.warn span{font-weight:600}
-.alerta.ok{background:#e3f4ea;border-color:var(--ok);color:var(--ok)}
-.alerta.info{background:var(--ceu);border-color:var(--linha)}
-.tag.pr{background:var(--nc)}
-#msg{position:fixed;bottom:16px;right:16px;background:var(--azul);color:#fff;padding:10px 16px;border-radius:8px;max-width:360px}
-#drop{border:2px dashed var(--linha);border-radius:8px;padding:22px;text-align:center;background:var(--bg)}
-#drop.over{border-color:var(--azul2);background:var(--ceu)}
+.alerta.ok{background:#e6f4ec;border-color:#9fd0b4;color:var(--ok)}
+.alerta.info{background:#eef2f8;border-color:var(--line)}
+#msg{position:fixed;bottom:18px;right:18px;background:var(--ink);color:#fff;padding:11px 18px;border-radius:10px;max-width:360px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+#drop{border:2px dashed #cfc8b6;border-radius:14px;padding:28px;text-align:center;background:#faf8f3;color:var(--mut)}
+#drop.over{border-color:var(--gold);background:#f6efe0}
 .err{color:var(--no)}
-@media print{header,.noprint,.tabs{display:none!important}.wrap{border:0}body{background:#fff}}
+#rel{display:none}
+@media print{
+  @page{margin:14mm}
+  body.pdf header,body.pdf main,body.pdf #msg{display:none!important}
+  body.pdf{background:#fff}
+  body.pdf #rel{display:block;color:#000;font-size:11px}
+  #rel h1{font-size:18px;margin:0 0 2px;color:var(--navy)}
+  #rel h3{font-size:13px;margin:18px 0 6px;padding-bottom:4px;border-bottom:2px solid var(--gold);color:var(--navy)}
+  #rel table{min-width:0;width:100%}
+  #rel th,#rel td{padding:5px 7px;font-size:10.5px;border-bottom:1px solid #ddd}
+  #rel th{position:static;background:#eee}
+  #rel thead{display:table-header-group}#rel tr{page-break-inside:avoid}
+}
 </style>
 </head>
 <body>
 
 <header>
-  <h1>Conferência semanal – Loja oficial FAB (Mercado Livre)</h1>
+  <h1>Conferência semanal · Loja oficial FAB</h1>
+  <p>Mercado Livre — controle de produtos incluídos, excluídos e preços</p>
 </header>
 
 <main>
   <section id="app">
-    <div class="card noprint">
+    <div class="card">
       <h2>Nova conferência</h2>
-      <div class="row" style="margin-bottom:10px">
+      <div class="row" style="margin-bottom:14px">
         <label>Data da conferência <input type="date" id="dataConf"></label>
         <label>Total que a loja mostra <input type="number" id="totalLoja" min="0" placeholder="ex.: 245" style="width:110px"></label>
       </div>
       <div id="drop">
-        Arraste aqui os PDFs das páginas da loja (salvos pelo navegador com Ctrl+P → Salvar como PDF)<br>
-        <button class="sec" id="escolher" style="margin-top:8px">Escolher PDFs</button>
+        Arraste aqui os PDFs das páginas da loja<br><small>(no navegador: Ctrl+P → Salvar como PDF)</small><br>
+        <button class="sec" id="escolher" style="margin-top:10px">Escolher PDFs</button>
         <input type="file" id="arq" accept="application/pdf" multiple class="hide">
-        <div id="arqLista" class="mut" style="margin-top:8px"></div>
+        <div id="arqLista" style="margin-top:10px"></div>
       </div>
-      <details style="margin-top:10px">
-        <summary>Ou colar links / nomes dos produtos (um por linha)</summary>
-        <textarea id="colar" placeholder="https://produto.mercadolivre.com.br/MLB-123456789-nome-do-produto-_JM&#10;https://..."></textarea>
-      </details>
-      <div class="row" style="margin-top:12px">
-        <button id="gerar">Gerar e salvar conferência</button>
+      <div class="row" style="margin-top:16px">
+        <button id="gerar" class="gold">Gerar e salvar conferência</button>
         <span id="gerarMsg" class="mut"></span>
       </div>
       <div id="diag"></div>
     </div>
 
-    <div class="card noprint">
+    <div class="card">
       <div class="row">
-        <label>Conferência: <select id="selConf"></select></label>
-        <label>Comparar com: <select id="selBase"></select></label>
-        <button class="sec" id="csv">Exportar CSV</button>
-        <button class="sec" id="imp">Imprimir</button>
+        <label>Conferência <select id="selConf"></select></label>
+        <label>Comparar com <select id="selBase"></select></label>
+        <button class="sec" id="csv">Exportar Excel (CSV)</button>
+        <button class="sec" id="pdf">Exportar PDF</button>
         <button class="sec" id="apagar">Apagar esta conferência</button>
         <button class="sec" id="zerarTudo">Apagar tudo</button>
       </div>
@@ -100,28 +109,27 @@ select.NC{background:#fff0d9;border-color:var(--nc);color:var(--nc);font-weight:
 
     <div id="vista" class="hide">
       <div class="resumo" id="resumo"></div>
-      <div class="tabs noprint" id="tabs"></div>
-      <div class="row noprint" style="margin-bottom:10px">
-        <input type="text" id="busca" placeholder="Buscar produto" style="min-width:280px">
-        <label><input type="checkbox" id="soPend"> Só pendentes (sem LAUDO ou HOMOLOGADO)</label>
+      <div class="tabs" id="tabs"></div>
+      <div class="row" style="margin-bottom:12px">
+        <input type="text" id="busca" placeholder="Buscar produto" style="min-width:300px">
       </div>
       <div class="wrap"><table><thead id="thead"></thead><tbody id="tbody"></tbody></table></div>
     </div>
     <p id="vazio" class="mut">Nenhuma conferência ainda. Gere a primeira acima.</p>
 
-    <div class="card noprint" id="histCard">
+    <div class="card" id="histCard" style="margin-top:18px">
       <h2>Histórico</h2>
       <div class="wrap" id="historico"></div>
     </div>
   </section>
 </main>
 <div id="msg" class="hide"></div>
+<div id="rel"></div>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
-/* ============ 1) COLE AQUI A CONFIGURAÇÃO DO SEU FIREBASE ============ */
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyD4rPblB8lGb_HWFYfUYkq8um85uAbM4vU",
   authDomain: "mercado-livre-dfb32.firebaseapp.com",
@@ -130,37 +138,30 @@ const FIREBASE_CONFIG = {
   messagingSenderId: "663540272674",
   appId: "1:663540272674:web:46fc655e12abcf484c047b"
 };
-/* ===================================================================== */
 
 firebase.initializeApp(FIREBASE_CONFIG);
 const db = firebase.firestore();
 pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
 const $ = s => document.querySelector(s);
-const OPC = [["", "—"], ["SIM", "SIM"], ["NÃO", "NÃO"], ["NÃO CONFORMIDADE", "NÃO CONFORMIDADE"]];
-const cls = v => v === "SIM" ? "SIM" : v === "NÃO" ? "NAO" : v === "NÃO CONFORMIDADE" ? "NC" : "";
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-
-const REVISOES = 3;                       // quantas leituras completas antes de salvar
+const REVISOES = 3;
 const SEM_NOME = "Nome não identificado";
 
-let confs = [], cur = null, baseId = "", tab = "novos", saveTimer = null;
+let confs = [], cur = null, baseId = "", tab = "todos", saveTimer = null;
 let diag = { links: 0, semId: [], dup: [] };
 
 function aviso(t, erro) {
   const m = $("#msg"); m.textContent = t; m.classList.remove("hide");
-  m.style.background = erro ? "#b3261e" : "";
+  m.style.background = erro ? "#a8322a" : "";
   clearTimeout(aviso.t); aviso.t = setTimeout(() => m.classList.add("hide"), 3000);
 }
 
-/* ---------- Datas e rótulos ---------- */
 const dt = d => d.split("-").reverse().join("/");
 const hora = c => c.criadoEm?.seconds
-  ? new Date(c.criadoEm.seconds * 1000).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
-  : "agora";
+  ? new Date(c.criadoEm.seconds * 1000).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "agora";
 const rotulo = c => `${dt(c.data)} ${hora(c)}`;
 
-/* ---------- Início (sem login) ---------- */
 $("#dataConf").valueAsDate = new Date();
 carregar().catch(e => aviso("Erro ao conectar ao Firebase: " + e.message, true));
 
@@ -180,8 +181,7 @@ const nomeProximo = (cx, cy, tx) => tx
   .sort((a, b) => Math.hypot(a.x - cx, a.y - cy) - Math.hypot(b.x - cx, b.y - cy))
   .map(t => t.s)[0] || "";
 
-const hash = s => { let h = 5381; for (const c of s.toLowerCase().trim()) h = ((h << 5) + h + c.charCodeAt(0)) >>> 0; return "T" + h.toString(16); };
-const novoItem = (i, t, k, p) => ({ i, t: nomeValido(t) || SEM_NOME, k: k || "", p: p || "", l: "", h: "", o: "" });
+const novoItem = (i, t, k, p) => ({ i, t: nomeValido(t) || SEM_NOME, k: k || "", p: p || "", o: "" });
 const maisComum = vals => {
   const c = new Map();
   for (const v of vals) if (v) c.set(v, (c.get(v) || 0) + 1);
@@ -206,19 +206,7 @@ const precoAVista = (cx, cy, tx) => {
   return m ? m[1] : "";
 };
 
-/* ---------- Leitura ---------- */
-function lerTexto(txt) {
-  const out = [], linhas = txt.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
-  const comLink = linhas.some(l => idDe(l));
-  for (const l of linhas) {
-    if (comLink) {
-      const url = (l.match(/https?:\/\/\S+/) || [""])[0], id = idDe(l);
-      if (id) out.push(novoItem(id, tituloDeUrl(url) || l.replace(url, "").trim(), url));
-    } else if (!/^https?:\/\//i.test(l)) out.push(novoItem(hash(l), l));
-  }
-  return out;
-}
-
+/* ---------- Leitura dos PDFs ---------- */
 async function lerPDF(file) {
   const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise, out = [];
   for (let n = 1; n <= pdf.numPages; n++) {
@@ -242,53 +230,25 @@ async function lerPDF(file) {
   return out;
 }
 
-// Um produto = um código de anúncio. Links repetidos do mesmo anúncio viram um só item.
+// Todas as ocorrências viram itens (repetidos aparecem). 1ª ocorrência = código; demais = código#2, #3…
 function unir(lista) {
-  const grupos = new Map();
+  const nomes = new Map();
+  for (const it of lista) { if (!nomes.has(it.i)) nomes.set(it.i, []); nomes.get(it.i).push(nomeValido(it.t)); }
+  const nomeDe = new Map([...nomes].map(([k, v]) => [k, maisComum(v.filter(n => n && n !== SEM_NOME)) || SEM_NOME]));
+  const cont = new Map(), saida = [];
   for (const it of lista) {
-    if (!grupos.has(it.i)) grupos.set(it.i, []);
-    grupos.get(it.i).push(it);
-  }
-  const saida = [];
-  for (const [base, ocorr] of grupos) {
-    const nome = maisComum(ocorr.map(o => nomeValido(o.t)).filter(n => n && n !== SEM_NOME)) || SEM_NOME;
-    if (ocorr.length > 1) diag.dup.push(nome);
-    saida.push({
-      i: base, t: nome,
-      k: ocorr.map(o => o.k).find(Boolean) || "",
-      p: maisComum(ocorr.map(o => o.p)),
-      l: "", h: "", o: ""
-    });
+    const n = (cont.get(it.i) || 0) + 1; cont.set(it.i, n);
+    if (n === 2) diag.dup.push(nomeDe.get(it.i));
+    saida.push({ ...it, i: n === 1 ? it.i : it.i + "#" + n, t: nomeDe.get(it.i) });
   }
   return saida;
-}
-
-// Conferências salvas antes desta versão podem ter códigos com sufixo "#n": junta tudo no código base
-function normalizar(itens) {
-  const m = new Map();
-  for (const it of itens) {
-    const base = String(it.i).split("#")[0];
-    const x = m.get(base);
-    if (!x) m.set(base, { ...it, i: base });
-    else {
-      if (x.t === SEM_NOME && it.t !== SEM_NOME) x.t = it.t;
-      if (!x.p && it.p) x.p = it.p;
-      if (!x.k && it.k) x.k = it.k;
-      if (!x.l && it.l) x.l = it.l;
-      if (!x.h && it.h) x.h = it.h;
-      if (!x.o && it.o) x.o = it.o;
-    }
-  }
-  return [...m.values()];
 }
 
 async function lerTudo() {
   diag = { links: 0, semId: [], dup: [] };
   let itens = [];
-  for (let i = 0; i < arquivos.length; i++) itens = itens.concat(await lerPDF(arquivos[i]));
-  itens = itens.concat(lerTexto($("#colar").value));
-  const linksTotal = diag.links;
-  return { itens: unir(itens), diag, linksTotal };
+  for (const f of arquivos) itens = itens.concat(await lerPDF(f));
+  return { itens: unir(itens), diag, linksTotal: diag.links };
 }
 
 function consenso(passagens) {
@@ -302,11 +262,7 @@ function consenso(passagens) {
     if (new Set(nomes).size > 1 || new Set(precos).size > 1) divergencias++;
     return { ...it, t: maisComum(nomes) || SEM_NOME, p: maisComum(precos) };
   });
-  return {
-    itens, mesmo, divergencias,
-    semNome: itens.filter(x => x.t === SEM_NOME).length,
-    semPreco: itens.filter(x => !x.p).length
-  };
+  return { itens, mesmo, divergencias, semNome: itens.filter(x => x.t === SEM_NOME).length, semPreco: itens.filter(x => !x.p).length };
 }
 
 /* ---------- Upload ---------- */
@@ -323,28 +279,27 @@ $("#gerar").onclick = async () => {
   const btn = $("#gerar"), msg = $("#gerarMsg"); btn.disabled = true; msg.className = "mut";
   try {
     $("#diag").innerHTML = "";
+    if (!arquivos.length) throw new Error("Escolha ou arraste os PDFs das páginas da loja.");
     const passagens = [];
     for (let r = 1; r <= REVISOES; r++) {
-      msg.textContent = `Revisão ${r} de ${REVISOES}: lendo ${arquivos.length} PDF(s) e o texto colado…`;
+      msg.textContent = `Revisão ${r} de ${REVISOES}: lendo ${arquivos.length} PDF(s)…`;
       passagens.push(await lerTudo());
     }
     msg.textContent = "Cruzando as revisões…";
-    const rev = consenso(passagens);
-    const itens = rev.itens;
-    if (!itens.length) throw new Error("Nenhum produto encontrado. O link da loja não é lido automaticamente: envie os PDFs das páginas da loja ou cole links de produtos (com código MLB).");
+    const rev = consenso(passagens), itens = rev.itens;
+    if (!itens.length) throw new Error("Nenhum produto encontrado nos PDFs. Salve as páginas da loja com Ctrl+P → Salvar como PDF.");
     if (itens.length > 3500) throw new Error("Limite de 3.500 produtos por conferência.");
     const totalLoja = parseInt($("#totalLoja").value, 10) || null;
     const data = $("#dataConf").value || new Date().toISOString().slice(0, 10);
 
-    // Marcações LAUDO/HOMOLOGADO/Observação: herdadas da versão mais recente até esta data
     const ant = confs.find(c => c.data <= data);
     if (ant) {
       const mp = new Map(ant.itens.map(x => [x.i, x]));
-      for (const it of itens) { const o = mp.get(it.i); if (o) { it.l = o.l; it.h = o.h; it.o = o.o; } }
+      for (const it of itens) { const o = mp.get(it.i); if (o) it.o = o.o || ""; }
     }
     msg.textContent = "Salvando…";
     const ref = await db.collection("conferencias").add({ data, totalLoja, criadoEm: firebase.firestore.FieldValue.serverTimestamp(), itens });
-    arquivos = []; mostraArqs(); $("#colar").value = ""; $("#arq").value = ""; $("#totalLoja").value = "";
+    arquivos = []; mostraArqs(); $("#arq").value = ""; $("#totalLoja").value = "";
     baseId = "";
     msg.textContent = `${itens.length} produtos salvos em ${dt(data)}.`;
     mostraDiag(itens.length, rev, passagens[REVISOES - 1], totalLoja);
@@ -359,7 +314,7 @@ $("#gerar").onclick = async () => {
 /* ---------- Dados ---------- */
 async function carregar(abrirId) {
   const snap = await db.collection("conferencias").orderBy("data", "desc").get();
-  confs = snap.docs.map(d => { const v = d.data(); return { id: d.id, ...v, itens: normalizar(v.itens || []) }; })
+  confs = snap.docs.map(d => ({ id: d.id, ...d.data(), itens: d.data().itens || [] }))
     .sort((a, b) => b.data.localeCompare(a.data) || (b.criadoEm?.seconds || 0) - (a.criadoEm?.seconds || 0));
   $("#selConf").innerHTML = confs.map(c => `<option value="${c.id}">${rotulo(c)} – ${c.itens.length} produtos</option>`).join("");
   $("#vazio").classList.toggle("hide", !!confs.length);
@@ -374,12 +329,8 @@ async function carregar(abrirId) {
 $("#selConf").onchange = () => { baseId = ""; abrir(); };
 $("#selBase").onchange = () => { baseId = $("#selBase").value; desenhar(); };
 
-function abrir() {
-  cur = confs.find(c => c.id === $("#selConf").value);
-  tab = "auto"; desenhar();
-}
+function abrir() { cur = confs.find(c => c.id === $("#selConf").value); tab = "todos"; desenhar(); }
 
-// Comparação escolhida pelo usuário; se não escolheu, a versão anterior mais recente
 function baseDe(rec) {
   if (baseId && baseId !== rec.id) { const b = confs.find(c => c.id === baseId); if (b) return b; }
   return confs[confs.indexOf(rec) + 1] || null;
@@ -419,8 +370,7 @@ $("#historico").onclick = e => {
 };
 
 function desenhaSelBase() {
-  const opts = confs.filter(c => c.id !== cur.id)
-    .map(c => `<option value="${c.id}">${rotulo(c)} – ${c.itens.length} produtos</option>`).join("");
+  const opts = confs.filter(c => c.id !== cur.id).map(c => `<option value="${c.id}">${rotulo(c)} – ${c.itens.length} produtos</option>`).join("");
   $("#selBase").innerHTML = `<option value="">Automático (versão anterior)</option>` + opts;
   $("#selBase").value = baseId && confs.some(c => c.id === baseId && c.id !== cur.id) ? baseId : "";
 }
@@ -438,28 +388,26 @@ function desenhar() {
   else al = `<div class="alerta warn"><b>ATENÇÃO – alterações em relação a ${lab}:</b>
     <span>${nN} item(ns) incluído(s)</span><span>${nR} item(ns) excluído(s)</span><span>${nP} preço(s) alterado(s)</span></div>`;
   const diffLoja = cur.totalLoja ? cur.totalLoja - cur.itens.length : null;
-  const cardLoja = cur.totalLoja ? `<div style="border-color:${diffLoja ? "var(--no)" : "var(--ok)"}"><b>${cur.totalLoja}</b>na loja${diffLoja ? " (" + (diffLoja > 0 ? "faltam " : "sobram ") + Math.abs(diffLoja) + ")" : " (bate)"}</div>` : "";
+  const cardLoja = cur.totalLoja ? `<div style="border-top-color:${diffLoja ? "var(--no)" : "var(--ok)"}"><b>${cur.totalLoja}</b>na loja${diffLoja ? " (" + (diffLoja > 0 ? "faltam " : "sobram ") + Math.abs(diffLoja) + ")" : " (bate)"}</div>` : "";
   $("#resumo").innerHTML = al + `
-    <div><b>${cur.itens.length}</b>produtos em ${rotulo(cur)}</div>
+    <div style="border-top-color:var(--gold)"><b>${cur.itens.length}</b>produtos em ${rotulo(cur)}</div>
     ${cardLoja}
     <div><b>${c.ant ? c.ant.itens.length : "—"}</b>${c.ant ? "em " + lab : "sem versão para comparar"}</div>
-    <div style="border-color:var(--novo)"><b style="color:var(--novo)">${c.ant ? nN : "—"}</b>incluídos</div>
-    <div style="border-color:var(--no)"><b style="color:var(--no)">${c.ant ? nR : "—"}</b>excluídos</div>
-    <div style="border-color:var(--nc)"><b style="color:var(--nc)">${c.ant ? nP : "—"}</b>preços alterados</div>`;
-  const T = [["novos", "Incluídos", nN], ["removidos", "Excluídos", nR], ["precos", "Preço alterado", nP], ["mantidos", "Mantidos", c.mantidos.length], ["todos", "Todos", cur.itens.length]];
-  if (tab === "auto") tab = !c.ant ? "todos" : nN ? "novos" : nR ? "removidos" : nP ? "precos" : "mantidos";
-  if (!c.ant) { tab = "todos"; }
+    <div style="border-top-color:var(--novo)"><b style="color:var(--novo)">${c.ant ? nN : "—"}</b>incluídos</div>
+    <div style="border-top-color:var(--no)"><b style="color:var(--no)">${c.ant ? nR : "—"}</b>excluídos</div>
+    <div style="border-top-color:var(--nc)"><b style="color:var(--nc)">${c.ant ? nP : "—"}</b>preços alterados</div>`;
+  const T = [["todos", "Todos", cur.itens.length], ["novos", "Incluídos", nN], ["removidos", "Excluídos", nR], ["precos", "Preço alterado", nP], ["mantidos", "Mantidos", c.mantidos.length]];
+  if (!c.ant) tab = "todos";
   $("#tabs").innerHTML = T.filter(t => c.ant || t[0] === "todos").map(t => `<button data-t="${t[0]}" class="${tab === t[0] ? "on" : ""}">${t[1]} (${t[2]})</button>`).join("");
   tabela(c);
 }
 $("#tabs").onclick = e => { const b = e.target.closest("button"); if (b) { tab = b.dataset.t; desenhar(); } };
 $("#busca").oninput = () => tabela(comparar());
-$("#soPend").onchange = () => tabela(comparar());
 
 function tabela(c) {
   const rem = tab === "removidos";
   let lista = rem ? c.removidos : tab === "novos" ? c.novos : tab === "precos" ? c.alterados : tab === "mantidos" ? c.mantidos : cur.itens;
-  const altIds = new Set(c.alterados.map(x => x.i));
+  const altIds = new Set(c.alterados.map(x => x.i)), novosIds = new Set(c.novos.map(x => x.i));
   const preco = x => {
     if (!x.p) return `<span class="mut">sem preço</span>`;
     if (!altIds.has(x.i)) return "R$ " + esc(x.p);
@@ -469,24 +417,19 @@ function tabela(c) {
   };
   const q = $("#busca").value.toLowerCase();
   if (q) lista = lista.filter(x => x.t.toLowerCase().includes(q));
-  if ($("#soPend").checked && !rem) lista = lista.filter(x => !x.l || !x.h);
-  const novosIds = new Set(c.novos.map(x => x.i));
-  $("#thead").innerHTML = `<tr><th>Produto</th><th>Preço</th><th>LAUDO</th><th>HOMOLOGADO</th><th>Observação</th></tr>`;
-  const sel = (campo, v, i) => `<select class="${cls(v)}" data-c="${campo}" data-i="${i}">${OPC.map(o => `<option value="${o[0]}" ${o[0] === v ? "selected" : ""}>${o[1]}</option>`).join("")}</select>`;
+  $("#thead").innerHTML = `<tr><th>Produto</th><th>Preço</th><th>Observação</th></tr>`;
   $("#tbody").innerHTML = lista.length ? lista.map(x => rem
-    ? `<tr><td><span class="tag rem">excluído</span> ${esc(x.t)}</td><td>${x.p ? "R$ " + esc(x.p) : ""}</td><td>${esc(x.l) || "—"}</td><td>${esc(x.h) || "—"}</td><td>${esc(x.o)}</td></tr>`
-    : `<tr><td>${novosIds.has(x.i) && c.ant ? '<span class="tag">incluído</span> ' : ""}${altIds.has(x.i) ? '<span class="tag pr">preço alterado</span> ' : ""}${x.k ? `<a href="${esc(x.k)}" target="_blank" rel="noopener">${esc(x.t)}</a>` : esc(x.t)}</td>
+    ? `<tr><td><span class="tag rem">excluído</span> ${esc(x.t)}</td><td>${x.p ? "R$ " + esc(x.p) : ""}</td><td>${esc(x.o)}</td></tr>`
+    : `<tr><td>${novosIds.has(x.i) && c.ant ? '<span class="tag">incluído</span> ' : ""}${altIds.has(x.i) ? '<span class="tag pr">preço alterado</span> ' : ""}${x.i.includes("#") ? '<span class="tag rep">repetido</span> ' : ""}${x.k ? `<a href="${esc(x.k)}" target="_blank" rel="noopener">${esc(x.t)}</a>` : esc(x.t)}</td>
        <td>${preco(x)}</td>
-       <td>${sel("l", x.l, esc(x.i))}</td><td>${sel("h", x.h, esc(x.i))}</td>
        <td><input type="text" value="${esc(x.o)}" data-c="o" data-i="${esc(x.i)}" placeholder="Observação"></td></tr>`).join("")
-    : `<tr><td colspan="5" class="mut">Nada para mostrar aqui.</td></tr>`;
+    : `<tr><td colspan="3" class="mut">Nada para mostrar aqui.</td></tr>`;
 }
 
 $("#tbody").addEventListener("input", e => {
-  const el = e.target, campo = el.dataset.c; if (!campo) return;
+  const el = e.target; if (el.dataset.c !== "o") return;
   const it = cur.itens.find(x => x.i === el.dataset.i); if (!it) return;
-  it[campo] = el.value;
-  if (el.tagName === "SELECT") el.className = cls(el.value);
+  it.o = el.value;
   clearTimeout(saveTimer); saveTimer = setTimeout(salvar, 700);
 });
 async function salvar() {
@@ -494,19 +437,36 @@ async function salvar() {
   catch (e) { aviso("Erro ao salvar: " + e.message, true); }
 }
 
-/* ---------- Exportar / imprimir / apagar ---------- */
+/* ---------- Exportar ---------- */
 $("#csv").onclick = () => {
-  const c = comparar(), nv = new Set(c.novos.map(x => x.i));
-  const alt = new Set(c.alterados.map(x => x.i));
-  const linhas = [["Situação", "Produto", "Preço", "Preço anterior", "LAUDO", "HOMOLOGADO", "Observação", "Link"]];
-  cur.itens.forEach(x => linhas.push([c.ant ? (nv.has(x.i) ? "INCLUÍDO" : alt.has(x.i) ? "PREÇO ALTERADO" : "MANTIDO") : "", x.t, x.p, alt.has(x.i) ? c.mapAnt.get(x.i).p : "", x.l, x.h, x.o, x.k]));
-  c.removidos.forEach(x => linhas.push(["EXCLUÍDO", x.t, "", x.p, x.l, x.h, x.o, x.k]));
-  const csv = "﻿" + linhas.map(l => l.map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(";")).join("\n");
+  const c = comparar(), nv = new Set(c.novos.map(x => x.i)), alt = new Set(c.alterados.map(x => x.i));
+  const linhas = [["Situação", "Produto", "Preço", "Preço anterior", "Observação", "Link"]];
+  cur.itens.forEach(x => linhas.push([c.ant ? (nv.has(x.i) ? "INCLUÍDO" : alt.has(x.i) ? "PREÇO ALTERADO" : "MANTIDO") : "", x.t, x.p, alt.has(x.i) ? c.mapAnt.get(x.i).p : "", x.o, x.k]));
+  c.removidos.forEach(x => linhas.push(["EXCLUÍDO", x.t, "", x.p, x.o, x.k]));
+  const csv = "\ufeff" + linhas.map(l => l.map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(";")).join("\n");
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
   a.download = `conferencia-fab-${cur.data}.csv`; a.click();
 };
-$("#imp").onclick = () => window.print();
+
+// PDF geral: resumo + incluídos + excluídos + preços alterados + lista completa (sem links)
+$("#pdf").onclick = () => {
+  const c = comparar();
+  const tb = (cab, linhas) => `<table><thead><tr>${cab.map(h => `<th>${h}</th>`).join("")}</tr></thead><tbody>${linhas.length ? linhas.map(l => `<tr>${l.map(v => `<td>${v}</td>`).join("")}</tr>`).join("") : `<tr><td colspan="${cab.length}">Nenhum item.</td></tr>`}</tbody></table>`;
+  const pr = x => x.p ? "R$ " + esc(x.p) : "—";
+  let h = `<h1>Conferência semanal · Loja oficial FAB</h1>
+    <div>Conferência de ${rotulo(cur)} · ${cur.itens.length} produtos${cur.totalLoja ? " · total na loja: " + cur.totalLoja : ""}</div>`;
+  if (c.ant) {
+    h += `<div>Comparada com ${rotulo(c.ant)} (${c.ant.itens.length} produtos): <b>${c.novos.length} incluído(s)</b>, <b>${c.removidos.length} excluído(s)</b>, <b>${c.alterados.length} preço(s) alterado(s)</b></div>`;
+    h += `<h3>Itens incluídos (${c.novos.length})</h3>` + tb(["Produto", "Preço"], c.novos.map(x => [esc(x.t), pr(x)]));
+    h += `<h3>Itens excluídos (${c.removidos.length})</h3>` + tb(["Produto", "Último preço"], c.removidos.map(x => [esc(x.t), pr(x)]));
+    h += `<h3>Preços alterados (${c.alterados.length})</h3>` + tb(["Produto", "Anterior", "Atual"], c.alterados.map(x => [esc(x.t), "R$ " + esc(c.mapAnt.get(x.i).p), pr(x)]));
+  }
+  h += `<h3>Lista completa (${cur.itens.length})</h3>` + tb(["#", "Produto", "Preço", "Observação"], cur.itens.map((x, n) => [n + 1, esc(x.t), pr(x), esc(x.o)]));
+  $("#rel").innerHTML = h;
+  document.body.classList.add("pdf");
+  setTimeout(() => { window.print(); document.body.classList.remove("pdf"); }, 150);
+};
 
 function mostraDiag(total, rev, passagem, totalLoja) {
   const d = passagem.diag, cut = s => esc(s.length > 110 ? s.slice(0, 110) + "…" : s);
@@ -518,12 +478,12 @@ function mostraDiag(total, rev, passagem, totalLoja) {
     ? (diff === 0 ? `<b style="color:var(--ok)">bate com a loja (${totalLoja})</b>`
       : `<b style="color:var(--no)">${diff > 0 ? "faltam " + diff : "sobram " + (-diff)} em relação à loja (${totalLoja})</b>`)
     : `<span class="mut">total da loja não informado</span>`;
-  $("#diag").innerHTML = `<details open style="margin-top:10px"><summary>Relatório da leitura</summary>
+  $("#diag").innerHTML = `<details open style="margin-top:12px"><summary>Relatório da leitura</summary>
     <p class="mut" style="margin:6px 0">Revisões: ${REVISOES} leituras completas · ${concord}</p>
-    <p style="margin:6px 0"><b>${total} produtos distintos</b> · ${passagem.linksTotal} links lidos · ${comparaLoja}</p>
+    <p style="margin:6px 0"><b>${total} itens</b> · ${passagem.linksTotal} links lidos · ${comparaLoja}</p>
     <p class="mut" style="margin:6px 0">sem nome: ${rev.semNome} · sem preço: ${rev.semPreco}</p>
-    ${d.dup.length ? `<p style="margin:6px 0"><b>Produtos que aparecem mais de uma vez nas páginas (contados uma só vez):</b></p><ul>${d.dup.map(t => `<li>${cut(t)}</li>`).join("")}</ul>` : ""}
-    ${d.semId.length ? `<details><summary class="mut">${d.semId.length} links sem código de produto (menus, rodapé, filtros… confira se algum é produto)</summary><ul>${d.semId.slice(0, 300).map(u => `<li>${cut(u)}</li>`).join("")}</ul></details>` : ""}
+    ${d.dup.length ? `<p style="margin:6px 0"><b>Produtos repetidos nas páginas (todos listados, marcados como “repetido”):</b></p><ul>${d.dup.map(t => `<li>${cut(t)}</li>`).join("")}</ul>` : ""}
+    ${d.semId.length ? `<details><summary class="mut">${d.semId.length} links sem código de produto (menus, rodapé, filtros…)</summary><ul>${d.semId.slice(0, 300).map(u => `<li>${cut(u)}</li>`).join("")}</ul></details>` : ""}
   </details>`;
 }
 
